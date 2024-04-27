@@ -29,23 +29,46 @@ class FourRoomsEnv(gym.Env):
     # Support human-friendly render mode
     metadata = {"render_modes": ["human"], "render_fps": 4}
 
-    def __init__(self, render_mode=None, size: int = 13):
+    def __init__(self, render_mode=None):
         """Initialize the Four Rooms environment.
 
         :param      render_mode     Selected render mode of the environment
-        :param      size            Size of the square grid
         """
-        self.size = size  # Size of the square grid
+        self.size = 13  # Size of the square grid (always 13)
         self.window_size = 512  # Size of the PyGame window (pixels)
+
+        # Create and populate array representing walls in the environment
+        walls_array = np.full((self.size, self.size), False)  # [rows, cols]
+
+        # Surround the environment with walls
+        walls_array[0, :] = True
+        walls_array[-1, :] = True
+        walls_array[:, 0] = True
+        walls_array[:, -1] = True
+
+        # Create center vertical walls (row = 0 to 2, 4 to 9, 11 to 12; col = 6)
+        walls_array[:3, 6] = True
+        walls_array[4:10, 6] = True
+        walls_array[11:, 6] = True
+
+        # Create left horizontal walls (row = 6; col = 0 to 1, 3 to 6)
+        walls_array[6, :2] = True
+        walls_array[6, 3:7] = True
+
+        # Create right horizontal walls (row = 7; col = 6 to 8, 10 to 12)
+        walls_array[7, 6:9] = True
+        walls_array[7, 10:] = True
+
+        self.walls_rc = walls_array  # Name indicates [row, column]
 
         """
         Observations include the agent's and goal's (x,y) locations, which
-            range from 1 to size - 2 (due to environment outer walls).
+            range from 1 to 11 (due to environment outer walls).
         """
         self.observation_space = Dict(
             {
-                "agent": Box(low=1, high=size - 2, shape=(2,), dtype=int),
-                "goal": Box(low=1, high=size - 2, shape=(2,), dtype=int),
+                "agent_xy": Box(low=1, high=self.size - 2, shape=(2,), dtype=int),
+                "goal_xy": Box(low=1, high=self.size - 2, shape=(2,), dtype=int),
             }
         )
 
@@ -53,7 +76,7 @@ class FourRoomsEnv(gym.Env):
         self.action_space = Discrete(8)
 
         # Maps abstract action indices to the corresponding (x,y) direction
-        self._action_to_direction = {
+        self._action_to_direction_xy = {
             0: np.array([1, 0]),  # Right
             1: np.array([1, 1]),  # Up-Right
             2: np.array([0, 1]),  # Up
@@ -79,50 +102,47 @@ class FourRoomsEnv(gym.Env):
 
     def _get_obs(self):
         """Translate the environment's state into an observation."""
-        return {"agent": self._agent_xy, "goal": self._goal_xy}
+        return {"agent_xy": self._agent_xy, "goal_xy": self._goal_xy}
 
     def _get_info(self):
         """Provide auxiliary information for the step() and reset() methods."""
         # For now, there's not really anything to return.
         return {}
 
-    def reset(self, seed=None):
+    def wall_collision(self, location_xy: np.ndarray):
+        """Check whether the given (x,y) location collides with the room walls.
+
+        :param      location_xy     Numpy array of shape (2,)
+        """
+        assert location_xy.shape == (2,)
+        location_rc = np.flip(location_xy)
+        return self.walls_rc[tuple(location_rc)]
+
+    def reset(self, seed=None, options=None):
         """Reset the environment to an initial state for a new episode.
 
+        Expect that the agent's and goal's locations are re-sampled into
+            non-wall locations, and not colliding with each other.
+
         :param      seed        Random seed to initialize environment's RNG
+        :param      options     Required for method override (unused)
         """
         # Seed the RNG for parent gymnasium.Env
         super().reset(seed=seed)
 
-        # Choose agent's starting (x,y) location uniformly at random
-        # TODO: Ensure agent and goal don't collide with walls!
-        self._agent_xy = self.observation_space["agent"].sample()
+        # Sample agent's initial (x,y) location uniformly, avoiding walls
+        self._agent_xy = self.observation_space["agent_xy"].sample()
+        while self.wall_collision(self._agent_xy):
+            print(f"Agent sampled into walls at {self._agent_xy}!")
+            self._agent_xy = self.observation_space["agent_xy"].sample()
 
-        # Sample goal's (x,y) location until it doesn't collide with the agent
-        self._goal_xy = self._agent_xy
-        while np.array_equal(self._goal_xy, self._agent_xy):
-            self._goal_xy = self.observation_space["goal"].sample()
-
-        comment = """TODO: Reference for creating the walls
-
-        # Begin with an empty grid surrounded by four walls
-        self.grid = Grid(width, height)
-        self.grid.wall_rect(0, 0, width, height)
-
-        # Create center vertical walls (x = 6; y = 0 to 2, 4 to 9, 11 to 12)
-        self.grid.vert_wall(6, 0, 3)
-        self.grid.vert_wall(6, 4, 6)
-        self.grid.vert_wall(6, 11, 2)
-
-        # Create left horizontal walls (x = 0 to 1, 3 to 6; y = 6)
-        self.grid.horz_wall(0, 6, 2)
-        self.grid.horz_wall(3, 6, 4)
-
-        # Create right horizontal walls (x = 6 to 8, 10 to 12; y = 7)
-        self.grid.horz_wall(6, 7, 3)
-        self.grid.horz_wall(10, 7, 3)
-        """
-        print(comment)  # TODO: Delete dummy variable!
+        # Sample goal's (x,y) location until collision-free with agent and walls
+        self._goal_xy = self.observation_space["goal_xy"].sample()
+        while np.array_equal(self._goal_xy, self._agent_xy) or self.wall_collision(
+            self._goal_xy
+        ):
+            print(f"Goal sampled into collision at {self._goal_xy}!")
+            self._goal_xy = self.observation_space["goal_xy"].sample()
 
         # Create initial observation and information, then render if needed
         initial_obs = self._get_obs()
@@ -133,23 +153,23 @@ class FourRoomsEnv(gym.Env):
 
         return initial_obs, info
 
-    def step(self, action_index: int):
+    def step(self, action: int):
         """Compute the new state of the environment after the given action.
 
-        :param      action_index    Index of the action to be simulated
+        :param      action      Index of the action to be simulated
         """
         # Map the action index to the correspoding movement
-        movement = self._action_to_direction[action_index]
+        movement_xy = self._action_to_direction_xy[action]
 
         # Compute what the next state would be, if valid
-        new_agent_xy = self._agent_xy + movement
+        new_agent_xy = self._agent_xy + movement_xy
 
         # Check if the new state is valid (inside grid and no wall collisions)
-        # TODO: Create walls and add collision checking for them!
         agent_in_bounds = (1 <= new_agent_xy) & (new_agent_xy <= self.size - 2)
+        no_wall_collisions = not self.wall_collision(new_agent_xy)
 
         # Update the state only if the agent's new location is valid
-        if agent_in_bounds.all():
+        if agent_in_bounds.all() and no_wall_collisions:
             self._agent_xy = new_agent_xy
 
         # Episode ends iff the agent reaches the goal
@@ -189,12 +209,19 @@ class FourRoomsEnv(gym.Env):
         cell_pixels = self.window_size / self.size  # Size of grid cell (pixels)
         cell_rect = (cell_pixels, cell_pixels)
 
+        # Draw the walls in grey
+        for wall_rc in np.argwhere(self.walls_rc):
+            wall_xy = np.flip(wall_rc)
+            pygame.draw.rect(
+                canvas, (92, 89, 82), pygame.Rect(wall_xy * cell_pixels, cell_rect)
+            )
+
         # Draw the goal in green
         pygame.draw.rect(
             canvas, (18, 181, 32), pygame.Rect(self._goal_xy * cell_pixels, cell_rect)
         )
 
-        # Draw the agent in red: 176, 23, 59
+        # Draw the agent in red
         pygame.draw.circle(
             canvas,
             (176, 23, 59),
@@ -203,20 +230,20 @@ class FourRoomsEnv(gym.Env):
         )
 
         # Add gridlines throughout the environment (in black)
-        for x in range(self.size + 1):
+        for line in range(self.size + 1):
             pygame.draw.line(
                 canvas,
                 0,
-                (0, cell_pixels * x),  # Start position (x,y)
-                (self.window_size, cell_pixels * x),  # End position (x,y)
+                (0, cell_pixels * line),  # Start position (x,y)
+                (self.window_size, cell_pixels * line),  # End position (x,y)
                 width=3,
             )
 
             pygame.draw.line(
                 canvas,
                 0,
-                (cell_pixels * x, 0),  # Start position (x,y)
-                (cell_pixels * x, self.window_size),  # End position (x,y)
+                (cell_pixels * line, 0),  # Start position (x,y)
+                (cell_pixels * line, self.window_size),  # End position (x,y)
                 width=3,
             )
 
