@@ -95,13 +95,34 @@ class FourRoomsEnv(gym.Env):
         super().reset(seed=seed)
 
         # Choose agent's starting (x,y) location uniformly at random
-        # TODO: Ensure agent doesn't collide with walls!
+        # TODO: Ensure agent and goal don't collide with walls!
         self._agent_xy = self.observation_space["agent"].sample()
 
         # Sample goal's (x,y) location until it doesn't collide with the agent
         self._goal_xy = self._agent_xy
         while np.array_equal(self._goal_xy, self._agent_xy):
             self._goal_xy = self.observation_space["goal"].sample()
+
+        comment = """TODO: Reference for creating the walls
+
+        # Begin with an empty grid surrounded by four walls
+        self.grid = Grid(width, height)
+        self.grid.wall_rect(0, 0, width, height)
+
+        # Create center vertical walls (x = 6; y = 0 to 2, 4 to 9, 11 to 12)
+        self.grid.vert_wall(6, 0, 3)
+        self.grid.vert_wall(6, 4, 6)
+        self.grid.vert_wall(6, 11, 2)
+
+        # Create left horizontal walls (x = 0 to 1, 3 to 6; y = 6)
+        self.grid.horz_wall(0, 6, 2)
+        self.grid.horz_wall(3, 6, 4)
+
+        # Create right horizontal walls (x = 6 to 8, 10 to 12; y = 7)
+        self.grid.horz_wall(6, 7, 3)
+        self.grid.horz_wall(10, 7, 3)
+        """
+        print(comment)  # TODO: Delete dummy variable!
 
         # Create initial observation and information, then render if needed
         initial_obs = self._get_obs()

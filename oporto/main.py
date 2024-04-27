@@ -1,6 +1,7 @@
 """Creates the Four Rooms environment and conducts project's experiments."""
 
-import optimal_portable_options
+import gymnasium as gym
+import oporto
 
 
 def main():
