@@ -29,13 +29,18 @@ class FourRoomsEnv(gym.Env):
     # Support human-friendly and RGB array render modes
     metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 20}
 
-    def __init__(self, render_mode=None):
+    def __init__(self, render_mode=None, fps=None):
         """Initialize the Four Rooms environment.
 
         :param      render_mode     Selected render mode of the environment
+        :param      fps             Frames per second to render the environment
         """
         self.size = 13  # Size of the square grid (always 13)
         self.window_size = 512  # Size of the PyGame window (pixels)
+
+        # Declare agent and goal (x,y) locations in Cartesian space
+        self._agent_xy = None
+        self._goal_xy = None
 
         # Create and populate array representing walls in the environment
         walls_array = np.full((self.size, self.size), False)  # [rows, cols]
@@ -103,14 +108,20 @@ class FourRoomsEnv(gym.Env):
         self.window = None
         self.clock = None
 
+        # Override the `fps` metadata using argument, if provided
+        if fps is not None:
+            self.metadata["render_fps"] = fps
+
     def _get_obs(self):
         """Translate the environment's state into an observation."""
         return {"agent_xy": self._agent_xy, "goal_xy": self._goal_xy}
 
     def _get_info(self):
-        """Provide auxiliary information for the step() and reset() methods."""
-        # For now, there's not really anything to return.
-        return {}
+        """Provide auxiliary information for the step() and reset() methods.
+
+        See _get_obs() for information summarizing the environment's state.
+        """
+        return {}  # For now, there's not really anything to return.
 
     def xy_to_rc(self, location_xy: np.ndarray):
         """Convert a Cartesian (x,y) coordinate into (row, col) indices.
@@ -224,7 +235,8 @@ class FourRoomsEnv(gym.Env):
         if self.render_mode == "human":
             self._render_frame()
 
-        print(f"Action: {action}\nNew Obs: {observation}\nReward: {reward}")
+        # Add the most recent action to the info dictionary
+        info["last_action"] = action
 
         return observation, reward, terminated, False, info
 

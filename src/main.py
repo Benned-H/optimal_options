@@ -1,15 +1,24 @@
-"""Creates the Four Rooms environment and conducts project's experiments."""
+"""This script creates a random agent in the Four Rooms environment."""
 
 from time import sleep
 from envs.four_rooms import FourRoomsEnv
+from agents.random_agent import RandomAgent
 
 
 def main():
-    """Create the Four Rooms environment."""
-    env = FourRoomsEnv(render_mode="human")
-    print(env.reset())
+    """Run the script's main method."""
+    env = FourRoomsEnv(render_mode="human", fps=100)
+
+    random_agent = RandomAgent(env)
+
+    env.reset()
+
     while True:
-        sleep(1)
+        action = random_agent.get_action()
+        obs, reward, terminated, _, info = env.step(action)
+
+        if terminated:
+            obs, info = env.reset()
 
 
 if __name__ == "__main__":
