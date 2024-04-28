@@ -27,7 +27,7 @@ class FourRoomsEnv(gym.Env):
     """A deterministic Four Rooms RL domain."""
 
     # Support human-friendly and RGB array render modes
-    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 20}
 
     def __init__(self, render_mode=None):
         """Initialize the Four Rooms environment.
@@ -74,8 +74,8 @@ class FourRoomsEnv(gym.Env):
             }
         )
 
-        # Eight possible actions move the agent into an adjacent square
-        self.action_space = Discrete(8)
+        # Nine possible actions: move the agent into an adjacent square or wait
+        self.action_space = Discrete(9)
 
         # Maps abstract action indices to (x,y) directions in Cartesian space
         self._action_to_direction_xy = {
@@ -87,6 +87,7 @@ class FourRoomsEnv(gym.Env):
             5: np.array([-1, -1]),  # Down-Left
             6: np.array([0, -1]),  # Down
             7: np.array([1, -1]),  # Down-Right
+            8: np.array([0, 0]),  # No-op
         }
 
         # Ensure that render_mode is None, or supported by the environment
@@ -117,12 +118,16 @@ class FourRoomsEnv(gym.Env):
         Notation: (x,y) coordinates increase L-to-R, bottom-to-top
                   (r,c) coordinates increase top-to-bottom, L-to-R
 
-            Therefore, row = (size - y) and column = x.
+            The leftmost x-coordinate (0) and column (0) are equal.
+            But the lowest y-coordinate (0) and row (12) aren't quite
+                offset by exactly the environment's size. Instead:
+
+            row = size - 1 - y (e.g., consider the last row, 12)
 
         :param      location_xy     Cartesian (x,y) coordinate of shape (2,)
         """
         assert location_xy.shape == (2,)
-        return np.array([self.size - location_xy[1], location_xy[0]])
+        return np.array([self.size - 1 - location_xy[1], location_xy[0]])
 
     def rc_to_pix_xy(self, index_rc: np.ndarray):
         """Convert a (row, col) index into an (x,y) pixel coordinate.
@@ -144,7 +149,7 @@ class FourRoomsEnv(gym.Env):
         :param      location_xy     Cartesian (x,y) coordinate of shape (2,)
         """
         assert location_xy.shape == (2,)
-        return np.array([location_xy[0], self.size - location_xy[1]])
+        return np.array([location_xy[0], self.size - 1 - location_xy[1]])
 
     def wall_collision(self, location_xy: np.ndarray):
         """Check whether the given (x,y) location collides with the room walls.
@@ -218,6 +223,8 @@ class FourRoomsEnv(gym.Env):
         info = self._get_info()
         if self.render_mode == "human":
             self._render_frame()
+
+        print(f"Action: {action}\nNew Obs: {observation}\nReward: {reward}")
 
         return observation, reward, terminated, False, info
 

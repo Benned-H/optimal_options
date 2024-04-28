@@ -14,7 +14,7 @@ def test_reset_agent_sampling():
         agent_xy = obs["agent_xy"]  # Cartesian (x,y) coordinate
         x, y = tuple(agent_xy)
 
-        row = env.size - y  # Convert bottom-to-top y to top-to-bottom row
+        row = env.size - 1 - y  # Convert bottom-to-top y to top-to-bottom row
         col = x  # Both x and column are left-to-right
         agent_rc = np.array([row, col])
 
@@ -44,7 +44,7 @@ def test_reset_goal_sampling_into_walls():
         goal_xy = obs["goal_xy"]  # Cartesian (x,y) coordinate
         x, y = tuple(goal_xy)
 
-        row = env.size - y  # Convert bottom-to-top y to top-to-bottom row
+        row = env.size - 1 - y  # Convert bottom-to-top y to top-to-bottom row
         col = x  # Both x and column are left-to-right
         goal_rc = np.array([row, col])
 
