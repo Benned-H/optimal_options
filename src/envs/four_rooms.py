@@ -26,8 +26,8 @@ from gymnasium.spaces import Dict, Box, Discrete
 class FourRoomsEnv(gym.Env):
     """A deterministic Four Rooms RL domain."""
 
-    # Support human-friendly render mode
-    metadata = {"render_modes": ["human"], "render_fps": 4}
+    # Support human-friendly and RGB array render modes
+    metadata = {"render_modes": ["human", "rgb_array"], "render_fps": 4}
 
     def __init__(self, render_mode=None):
         """Initialize the Four Rooms environment.
@@ -59,11 +59,13 @@ class FourRoomsEnv(gym.Env):
         walls_array[7, 6:9] = True
         walls_array[7, 10:] = True
 
-        self.walls_rc = walls_array  # Name indicates [row, column]
+        # Indexed by [row, column] using standard matrix conventions
+        # Rows are ordered top-to-bottom, columns ordered left-to-right
+        self.walls_rc = walls_array
 
         """
-        Observations include the agent's and goal's (x,y) locations, which
-            range from 1 to 11 (due to environment outer walls).
+        Observations include the agent's and goal's (x,y) locations in Cartesian
+            space, with values ranging from 1 to 11 (due to the outer walls).
         """
         self.observation_space = Dict(
             {
@@ -75,7 +77,7 @@ class FourRoomsEnv(gym.Env):
         # Eight possible actions move the agent into an adjacent square
         self.action_space = Discrete(8)
 
-        # Maps abstract action indices to the corresponding (x,y) direction
+        # Maps abstract action indices to (x,y) directions in Cartesian space
         self._action_to_direction_xy = {
             0: np.array([1, 0]),  # Right
             1: np.array([1, 1]),  # Up-Right
@@ -109,13 +111,48 @@ class FourRoomsEnv(gym.Env):
         # For now, there's not really anything to return.
         return {}
 
+    def xy_to_rc(self, location_xy: np.ndarray):
+        """Convert a Cartesian (x,y) coordinate into (row, col) indices.
+
+        Notation: (x,y) coordinates increase L-to-R, bottom-to-top
+                  (r,c) coordinates increase top-to-bottom, L-to-R
+
+            Therefore, row = (size - y) and column = x.
+
+        :param      location_xy     Cartesian (x,y) coordinate of shape (2,)
+        """
+        assert location_xy.shape == (2,)
+        return np.array([self.size - location_xy[1], location_xy[0]])
+
+    def rc_to_pix_xy(self, index_rc: np.ndarray):
+        """Convert a (row, col) index into an (x,y) pixel coordinate.
+
+        Notation: (r,c) coordinates increase top-to-bottom, L-to-R
+                  (x,y) pixel coordinates increase L-to-R, top-to-bottom
+
+        :param      index_rc        Index in (row, col) space of shape (2,)
+        """
+        assert index_rc.shape == (2,)
+        return np.flip(index_rc)
+
+    def xy_to_pix_xy(self, location_xy: np.ndarray):
+        """Convert a Cartesian (x,y) coordinate into an (x,y) pixel coordinate.
+
+        Notation: (x,y) coordinates increase L-to-R, bottom-to-top
+                  (x,y) pixel coordinates increase L-to-R, top-to-bottom
+
+        :param      location_xy     Cartesian (x,y) coordinate of shape (2,)
+        """
+        assert location_xy.shape == (2,)
+        return np.array([location_xy[0], self.size - location_xy[1]])
+
     def wall_collision(self, location_xy: np.ndarray):
         """Check whether the given (x,y) location collides with the room walls.
 
-        :param      location_xy     Numpy array of shape (2,)
+        :param      location_xy     Cartesian (x,y) coordinate of shape (2,)
         """
         assert location_xy.shape == (2,)
-        location_rc = np.flip(location_xy)
+        location_rc = self.xy_to_rc(location_xy)  # Convert to (row, col) space
         return self.walls_rc[tuple(location_rc)]
 
     def reset(self, seed=None, options=None):
@@ -158,7 +195,7 @@ class FourRoomsEnv(gym.Env):
 
         :param      action      Index of the action to be simulated
         """
-        # Map the action index to the correspoding movement
+        # Map the action index to the corresponding movement
         movement_xy = self._action_to_direction_xy[action]
 
         # Compute what the next state would be, if valid
@@ -186,6 +223,9 @@ class FourRoomsEnv(gym.Env):
 
     def render(self):
         """Compute the render frames specified by `self.render_mode`."""
+        if self.render_mode == "rgb_array":
+            return self._render_frame()
+
         if self.render_mode is None:
             return None
 
@@ -211,21 +251,25 @@ class FourRoomsEnv(gym.Env):
 
         # Draw the walls in grey
         for wall_rc in np.argwhere(self.walls_rc):
-            wall_xy = np.flip(wall_rc)
+            wall_pix_xy = self.rc_to_pix_xy(wall_rc)
             pygame.draw.rect(
-                canvas, (92, 89, 82), pygame.Rect(wall_xy * cell_pixels, cell_rect)
+                canvas,
+                (92, 89, 82),
+                pygame.Rect(wall_pix_xy * cell_pixels, cell_rect),
             )
 
         # Draw the goal in green
+        goal_pix_xy = self.xy_to_pix_xy(self._goal_xy)
         pygame.draw.rect(
-            canvas, (18, 181, 32), pygame.Rect(self._goal_xy * cell_pixels, cell_rect)
+            canvas, (18, 181, 32), pygame.Rect(goal_pix_xy * cell_pixels, cell_rect)
         )
 
         # Draw the agent in red
+        agent_pix_xy = self.xy_to_pix_xy(self._agent_xy)
         pygame.draw.circle(
             canvas,
             (176, 23, 59),
-            (self._agent_xy + 0.5) * cell_pixels,  # Center of the circle
+            (agent_pix_xy + 0.5) * cell_pixels,  # Center of the circle
             cell_pixels / 2.5,  # Radius (pixels)
         )
 
@@ -255,6 +299,8 @@ class FourRoomsEnv(gym.Env):
 
             # Keep the human-rendering at a stable framerate (delays if early)
             self.clock.tick(self.metadata["render_fps"])
+        elif self.render_mode == "rgb_array":
+            return np.array(pygame.surfarray.pixels3d(canvas))
 
     def close(self):
         """Close all open resources used by the environment."""
