@@ -1,6 +1,6 @@
 """Tests for the generic UndirectedGraph class."""
 
-from core.undirected_graph import UndirectedGraph
+from graphs.undirected_graph import UndirectedGraph
 
 
 def test_graph_adjacency_unique():
