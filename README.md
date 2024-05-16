@@ -46,7 +46,8 @@ To complete this project, the following things will be needed:
     - [ ] Options case - Compare perfect, learned, and no options ("flat")
         - See OBH Fig. 1B and BPO Fig. 2
         - [ ] Learn options over best/worst/arbitrary structures
-            - [ ] How does OBH "arbitrary" compare with BPO "learned" options?
+            - OBH's "arbitrary" is simply some alternative graph decomposition
+            - BPO's "learned" options refers to learning under some given structure, so in our case we can compate the optimal, least optimal, and an arbitrary structure.
         - [ ] "Flat" agents are learned using $\epsilon$-greedy SARSA($\lambda$) (BPO) or actor-critic (Botvinick et al., 2008)
         - [ ] Options are learned using off-policy trace-based tree-backup updates (BPO) or actor-critic
             - [ ] See *[Precup et al., 2000]* for intra-option learning
@@ -56,6 +57,7 @@ To complete this project, the following things will be needed:
     - [ ] Portable options case - Compare best and worst sets of portable options
         - [ ] See BPO Fig. 3 - After 0/1/2/5/10 training experiences on *other* worlds
             - [ ] Each "training experience" was 100 episodes in a random training world (different from the single evaluation world)
+            - [ ] Need to generate "N rooms" worlds
         - [ ] Experiment with 1, 2, or 4 portable options. Start with 2x2 kernels
         - [ ] Could plot every single portable option (because compactly visualizable)
         - [ ] In BPO, value functions were learned using linear function approximation
