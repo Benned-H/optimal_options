@@ -45,16 +45,16 @@ def test_uniform_spanning_tree():
         graph = UndirectedGraph[int](vertex_data, edges)
 
         # Act - Compute a uniform spanning tree for the example graph
-        spanning_tree = uniform_spanning_tree(graph)
+        spanning_tree = uniform_spanning_tree(graph, rng)
 
         # Assert - Verify expected properties of the output spanning tree
 
         # Expect the graph and spanning tree to have the same number of vertices
         assert graph.size_V == spanning_tree.size_V, "Expected |G.V| to equal |T.V|!"
 
-        # Expect the spanning tree to have 2 * (|V| - 1) edges
+        # Expect the spanning tree T to have 2 * (|G.V| - 1) edges
         tree_size_E = 2 * (graph.size_V - 1)
-        assert spanning_tree.size_E == tree_size_E, "Expected |T.E| == 2(V - 1)!"
+        assert spanning_tree.size_E == tree_size_E, "Expected |T.E| == 2(|G.V| - 1)!"
 
         # Expect the spanning tree to be a tree (connected and acyclic)
         # TODO - UndirectedGraph needs methods is_connected() and is_cyclic()

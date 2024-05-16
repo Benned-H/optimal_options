@@ -4,7 +4,9 @@ import numpy as np
 from graphs.undirected_graph import T, UndirectedGraph
 
 
-def uniform_spanning_tree(graph: UndirectedGraph[T]) -> UndirectedGraph:
+def uniform_spanning_tree(
+    graph: UndirectedGraph[T], rng: np.random.Generator
+) -> UndirectedGraph[T]:
     """Compute a uniform spanning tree using Wilson's algorithm.
 
     A spanning tree T of graph G is a tree subgraph that includes all vertices in G.
@@ -13,6 +15,7 @@ def uniform_spanning_tree(graph: UndirectedGraph[T]) -> UndirectedGraph:
         at random from all possible spanning trees of G.
 
     :param      graph   Undirected graph for which a uniform spanning tree is found
+    :param      rng     Random number generator (initialized elsewhere)
     :returns    Undirected graph representing a random spanning tree of G
     """
 
@@ -21,7 +24,6 @@ def uniform_spanning_tree(graph: UndirectedGraph[T]) -> UndirectedGraph:
     in_tree = np.full((graph.size_V), False, dtype=bool)  # Boolean array of shape (V,)
 
     # Sample a random root for the tree and mark it as in the tree
-    rng = np.random.default_rng()
     root = rng.integers(graph.size_V)
     in_tree[root] = True
 
