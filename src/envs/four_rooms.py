@@ -123,7 +123,7 @@ class FourRoomsEnv(gym.Env):
         """
         return {}  # For now, there's not really anything to return.
 
-    def xy_to_rc(self, location_xy: np.ndarray):
+    def xy_to_rc(self, location_xy: np.ndarray) -> np.ndarray:
         """Convert a Cartesian (x,y) coordinate into (row, col) indices.
 
         Notation: (x,y) coordinates increase L-to-R, bottom-to-top
@@ -133,39 +133,43 @@ class FourRoomsEnv(gym.Env):
             But the lowest y-coordinate (0) and row (12) aren't quite
                 offset by exactly the environment's size. Instead:
 
-            row = size - 1 - y (e.g., consider the last row, 12)
+            row = size - 1 - y (e.g., consider the last row, 12 as y = 0)
 
         :param      location_xy     Cartesian (x,y) coordinate of shape (2,)
+        :returns    index_rc        Index in (row, col) space of shape (2,)
         """
         assert location_xy.shape == (2,)
         return np.array([self.size - 1 - location_xy[1], location_xy[0]])
 
-    def rc_to_pix_xy(self, index_rc: np.ndarray):
+    def rc_to_pix_xy(self, index_rc: np.ndarray) -> np.ndarray:
         """Convert a (row, col) index into an (x,y) pixel coordinate.
 
         Notation: (r,c) coordinates increase top-to-bottom, L-to-R
                   (x,y) pixel coordinates increase L-to-R, top-to-bottom
 
-        :param      index_rc        Index in (row, col) space of shape (2,)
+        :param      index_rc            Index in (row, col) space of shape (2,)
+        :returns    location_pix_xy     Pixel (x,y) coordinate of shape (2,)
         """
         assert index_rc.shape == (2,)
         return np.flip(index_rc)
 
-    def xy_to_pix_xy(self, location_xy: np.ndarray):
+    def xy_to_pix_xy(self, location_xy: np.ndarray) -> np.ndarray:
         """Convert a Cartesian (x,y) coordinate into an (x,y) pixel coordinate.
 
         Notation: (x,y) coordinates increase L-to-R, bottom-to-top
                   (x,y) pixel coordinates increase L-to-R, top-to-bottom
 
-        :param      location_xy     Cartesian (x,y) coordinate of shape (2,)
+        :param      location_xy         Cartesian (x,y) coordinate of shape (2,)
+        :returns    location_pix_xy     Pixel (x,y) coordinate of shape (2,)
         """
         assert location_xy.shape == (2,)
         return np.array([location_xy[0], self.size - 1 - location_xy[1]])
 
-    def wall_collision(self, location_xy: np.ndarray):
+    def wall_collision(self, location_xy: np.ndarray) -> bool:
         """Check whether the given (x,y) location collides with the room walls.
 
         :param      location_xy     Cartesian (x,y) coordinate of shape (2,)
+        :returns    Boolean indicating if the location collides with a wall
         """
         assert location_xy.shape == (2,)
         location_rc = self.xy_to_rc(location_xy)  # Convert to (row, col) space
@@ -179,6 +183,7 @@ class FourRoomsEnv(gym.Env):
 
         :param      seed        Random seed to initialize environment's RNG
         :param      options     Required for method override (unused)
+        :returns    Tuple containing (initial observation, debug info)
         """
         # Seed the RNG for parent gymnasium.Env
         super().reset(seed=seed)
@@ -210,6 +215,7 @@ class FourRoomsEnv(gym.Env):
         """Compute the new state of the environment after the given action.
 
         :param      action      Index of the action to be simulated
+        :returns    Tuple containing (obs, reward, terminated, truncated, info)
         """
         # Map the action index to the corresponding movement
         movement_xy = self._action_to_direction_xy[action]

@@ -8,7 +8,7 @@ def test_reset_agent_sampling():
     """Expect that the reset() method never leaves the agent in a wall."""
     env = FourRoomsEnv(render_mode=None)
 
-    for trial in range(5 * 13**2):
+    for _ in range(5 * env.size**2):
         obs, _ = env.reset()
 
         agent_xy = obs["agent_xy"]  # Cartesian (x,y) coordinate
@@ -16,16 +16,16 @@ def test_reset_agent_sampling():
 
         row = env.size - 1 - y  # Convert bottom-to-top y to top-to-bottom row
         col = x  # Both x and column are left-to-right
-        agent_rc = np.array([row, col])
+        agent_rc = (row, col)
 
-        assert not env.walls_rc[tuple(agent_rc)]
+        assert not env.walls_rc[agent_rc]
 
 
 def test_reset_goal_sampling_into_agent():
     """Expect that the reset() method never leaves the agent on the goal."""
     env = FourRoomsEnv(render_mode=None)
 
-    for trial in range(5 * 13**2):
+    for _ in range(5 * env.size**2):
         obs, _ = env.reset()
 
         agent_xy = tuple(obs["agent_xy"])  # Both are Cartesian (x,y) coords
@@ -38,7 +38,7 @@ def test_reset_goal_sampling_into_walls():
     """Expect that the reset() method never leaves the goal in a wall."""
     env = FourRoomsEnv(render_mode=None)
 
-    for trial in range(5 * 13**2):
+    for _ in range(5 * env.size**2):
         obs, _ = env.reset()
 
         goal_xy = obs["goal_xy"]  # Cartesian (x,y) coordinate
@@ -46,9 +46,9 @@ def test_reset_goal_sampling_into_walls():
 
         row = env.size - 1 - y  # Convert bottom-to-top y to top-to-bottom row
         col = x  # Both x and column are left-to-right
-        goal_rc = np.array([row, col])
+        goal_rc = (row, col)
 
-        assert not env.walls_rc[tuple(goal_rc)]
+        assert not env.walls_rc[goal_rc]
 
 
 def test_xy_to_rc_to_pix_xy_conversion():
