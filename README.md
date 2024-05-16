@@ -47,7 +47,7 @@ To complete this project, the following things will be needed:
         - See OBH Fig. 1B and BPO Fig. 2
         - [ ] Learn options over best/worst/arbitrary structures
             - OBH's "arbitrary" is simply some alternative graph decomposition
-            - BPO's "learned" options refers to learning under some given structure, so in our case we can compate the optimal, least optimal, and an arbitrary structure.
+            - BPO's "learned" options refers to learning under some given structure, in our case this can compare the optimal, least optimal, and an arbitrary decomposition.
         - [ ] "Flat" agents are learned using $\epsilon$-greedy SARSA($\lambda$) (BPO) or actor-critic (Botvinick et al., 2008)
         - [ ] Options are learned using off-policy trace-based tree-backup updates (BPO) or actor-critic
             - [ ] See *[Precup et al., 2000]* for intra-option learning
