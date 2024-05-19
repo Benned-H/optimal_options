@@ -23,6 +23,7 @@ import gymnasium as gym
 from gymnasium.spaces import Dict, Box, Discrete
 
 from graphs.undirected_graph import UndirectedGraph
+from graphics.colors import equally_spaced_colors
 
 
 class FourRoomsEnv(gym.Env):
@@ -339,10 +340,12 @@ class FourRoomsEnv(gym.Env):
         # Draw the transition graph(s), if there are any
         # Each graph is an UndirectedGraph[np.ndarray] with (x,y) vertices
         if self.transition_graphs:
-            for graph in self.transition_graphs:
+            graph_colors = [(250, 146, 20)]
 
-                # TODO: Vary the color for each different graph if multiple graphs!
-                graph_color = (250, 146, 20)
+            if len(self.transition_graphs) > 1:
+                graph_colors = equally_spaced_colors(len(self.transition_graphs))
+
+            for graph, graph_color in zip(self.transition_graphs, graph_colors):
 
                 for v_xy in graph.V:  # Draw each vertex as a circle on that (x,y)
                     v_pix_xy = self.xy_to_pix_xy(v_xy)

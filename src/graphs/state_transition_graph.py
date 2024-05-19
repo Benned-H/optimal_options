@@ -1,4 +1,4 @@
-"""This module provides functions to turn MDPs into state transition graphs."""
+"""This module provides functions to convert MDPs into state transition graphs."""
 
 import numpy as np
 from envs.four_rooms import FourRoomsEnv
