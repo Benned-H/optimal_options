@@ -64,8 +64,8 @@ def decompose(
 ) -> list[UndirectedGraph[T]]:
     """Decompose the given graph into N random connected components.
 
-    To create N random connected components, we find a uniform spanning tree,
-        then remove N - 1, and finally separate the resulting component subgraphs.
+    To create N random connected components, find a uniform spanning tree, remove
+        N - 1 edges, and finally separate the resulting component subgraphs.
 
     Assertion: The number of components must be at least 1 and at most |V|
 
