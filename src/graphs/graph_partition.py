@@ -60,30 +60,31 @@ def uniform_spanning_tree(
 
 
 def decompose(
-    n: int, tree: UndirectedGraph[T], rng: np.random.Generator
+    n: int, graph: UndirectedGraph[T], rng: np.random.Generator
 ) -> list[UndirectedGraph[T]]:
-    """Decompose the given spanning tree into N connected components.
+    """Decompose the given graph into N random connected components.
 
-    This can be accomplished by simply removing N - 1 edges from the tree.
+    To create N random connected components, we find a uniform spanning tree,
+        then remove N - 1, and finally separate the resulting component subgraphs.
 
-    Assertion: The number of components must be at least 1 and at most |tree.V|
+    Assertion: The number of components must be at least 1 and at most |V|
 
     :param      n               Number of connected components to create
-    :param      tree            Spanning tree of some undirected graph
+    :param      graph           Undirected graph to decompose into components
     :param      rng             Random number generator (initialized elsewhere)
     :returns    List of connected components (each an UndirectedGraph[T] subgraph)
     """
-    assert 1 <= n and n <= tree.size_V, "{n} is an invalid number of components!"
+    assert 1 <= n and n <= graph.size_V, "{n} is an invalid number of components!"
 
-    tree_copy = deepcopy(tree)
+    spanning_tree = uniform_spanning_tree(graph, rng)
 
-    # Remove N - 1 edges from the copy of the spanning tree
+    # Remove N - 1 edges from the spanning tree
     for _ in range(n - 1):
-        edge = tree_copy.random_edge(rng)
-        tree_copy.remove_edge(edge)
+        edge = spanning_tree.sample_edge(rng)
+        spanning_tree.remove_edge(edge)
 
-    # Separate the original graph into its connected components
-    connected_components = separate_components(tree_copy)
+    # Separate the resulting graph into its connected components
+    connected_components = separate_components(spanning_tree)
 
     # Sanity-check - Did we end up with N components, as expected?
     resulting_n = len(connected_components)

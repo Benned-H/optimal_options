@@ -76,7 +76,7 @@ def test_get_edge_from_idx():
     number_graphs = 30  # Number of random graphs used in testing
     tests_per_graph = 20  # Number of random edge indices to test per graph
 
-    rng = np.random.default_rng(2)
+    rng = np.random.default_rng()
 
     for _ in range(number_graphs):
 
@@ -110,12 +110,12 @@ def test_get_edge_from_idx():
             # Assert - Verify that the resulting edge correctly "lines up"
             result_i, result_j = result_edge
 
-            edges_before_i = -1
+            edges_before_i = 0
             for before_i in range(result_i):  # Doesn't include i's edge count
                 edges_before_i += len(graph.adjacent[before_i])
 
             # Find the expected index into vertex i's neighbors, based on the result
-            expected_neighbor_idx = request_edge_idx - edges_before_i - 1
+            expected_neighbor_idx = request_edge_idx - edges_before_i
 
             # Find the corresponding expected neighbor (say, j) of vertex i
             sorted_neighbors_i = sorted(list(graph.adjacent[result_i]))

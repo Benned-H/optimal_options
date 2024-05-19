@@ -156,7 +156,7 @@ class UndirectedGraph(Generic[T]):
 
         return neighbor
 
-    def random_edge(self, rng: np.random.Generator) -> tuple[int, int]:
+    def sample_edge(self, rng: np.random.Generator) -> tuple[int, int]:
         """Sample a random edge from the graph.
 
         :param      rng         Random number generator (initialized elsewhere)
@@ -164,9 +164,9 @@ class UndirectedGraph(Generic[T]):
         """
 
         # Use |E| to sample the index of a random edge
-        random_edge_idx = rng.integers(self.size_E)  # Index: 0 through |E| - 1
+        edge_idx = rng.integers(self.size_E)  # Index: 0 through |E| - 1
 
         # Find the edge corresponding to the sampled index
-        edge = self.get_edge_from_idx(random_edge_idx)
+        edge = self.get_edge_from_idx(edge_idx)
 
         return edge

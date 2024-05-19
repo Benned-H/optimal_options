@@ -8,9 +8,9 @@ from graphs.connectivity import is_connected
 def test_is_connected_fully_connected():
     """Expect that any fully connected graph is considered connected."""
 
-    min_size_V = 100  # Minimum number of vertices in a test graph
-    max_size_V = 250  # Maximum number of vertices in a test graph
-    number_trials = 30  # Number of graphs and spanning trees to test
+    min_size_V = 100  # Minimum number of vertices
+    max_size_V = 250  # Maximum number of vertices
+    number_trials = 30  # Number of test graphs to create
 
     rng = np.random.default_rng()
 
@@ -37,7 +37,7 @@ def test_is_connected_linear():
 
     min_size_V = 10  # Minimum number of vertices in a chain
     max_size_V = 500  # Maximum number of vertices in a chain
-    number_trials = 50  # Number of graphs and spanning trees to test
+    number_trials = 50  # Number of test graphs to create
 
     rng = np.random.default_rng()
 
@@ -60,15 +60,14 @@ def test_is_connected_linear():
             permuted_u = chain_permutation[idx + 1]
             edges.append((permuted_v, permuted_u))
 
-        connected_chain = UndirectedGraph[int](vertex_data, edges)
+        chain = UndirectedGraph[int](vertex_data, edges)
 
         # Act/Assert - Any connected chain should be considered connected!
-        assert is_connected(connected_chain)
+        assert is_connected(chain)
 
         # Act 2 - Remove a single random edge from the chain
-        remove_edge_idx = rng.integers(connected_chain.size_E)
-        e = connected_chain.get_edge_from_idx(remove_edge_idx)
-        connected_chain.remove_edge(e)
+        removed_edge = chain.sample_edge(rng)
+        chain.remove_edge(removed_edge)
 
         # Assert - Expect that removing any single edge makes the chain unconnected
-        assert not is_connected(connected_chain)
+        assert not is_connected(chain)
