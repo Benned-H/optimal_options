@@ -28,10 +28,10 @@ def test_reset_goal_sampling_into_agent():
     for _ in range(5 * env.size**2):
         obs, _ = env.reset()
 
-        agent_xy = tuple(obs["agent_xy"])  # Both are Cartesian (x,y) coords
-        goal_xy = tuple(obs["goal_xy"])
+        agent_xy = obs["agent_xy"]  # Both are Cartesian (x,y) coords
+        goal_xy = env.get_goal_xy()
 
-        assert agent_xy != goal_xy
+        assert not np.array_equal(agent_xy, goal_xy)
 
 
 def test_reset_goal_sampling_into_walls():
@@ -39,9 +39,9 @@ def test_reset_goal_sampling_into_walls():
     env = FourRoomsEnv(render_mode=None)
 
     for _ in range(5 * env.size**2):
-        obs, _ = env.reset()
+        env.reset()
 
-        goal_xy = obs["goal_xy"]  # Cartesian (x,y) coordinate
+        goal_xy = env.get_goal_xy()  # Cartesian (x,y) coordinate
         x, y = tuple(goal_xy)
 
         row = env.size - 1 - y  # Convert bottom-to-top y to top-to-bottom row
@@ -49,6 +49,21 @@ def test_reset_goal_sampling_into_walls():
         goal_rc = (row, col)
 
         assert not env.walls_rc[goal_rc]
+
+
+def test_reset_is_valid():
+    """Expect that outputs from the reset() method always satisfy valid_xy()."""
+
+    env = FourRoomsEnv(render_mode=None)
+
+    for _ in range(5 * env.size**2):
+        obs, _ = env.reset()
+
+        agent_xy = obs["agent_xy"]  # Cartesian (x,y) coordinate
+        goal_xy = env.get_goal_xy()
+
+        assert env.valid_xy(agent_xy), "Expected reset() to produce valid agent (x,y)!"
+        assert env.valid_xy(goal_xy), "Expected reset() to produce valid goal (x,y)!"
 
 
 def test_xy_to_rc_to_pix_xy_conversion():

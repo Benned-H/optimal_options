@@ -22,6 +22,9 @@ import pygame
 import gymnasium as gym
 from gymnasium.spaces import Dict, Box, Discrete
 
+from graphs.undirected_graph import UndirectedGraph
+from graphics.colors import equally_spaced_colors
+
 
 class FourRoomsEnv(gym.Env):
     """A deterministic Four Rooms RL domain."""
@@ -69,13 +72,12 @@ class FourRoomsEnv(gym.Env):
         self.walls_rc = walls_array
 
         """
-        Observations include the agent's and goal's (x,y) locations in Cartesian
-            space, with values ranging from 1 to 11 (due to the outer walls).
+        Observations consist of the agent's (x,y) location in Cartesian space, with
+            values ranging from 1 to 11 (due to the outer walls).
         """
         self.observation_space = Dict(
             {
                 "agent_xy": Box(low=1, high=self.size - 2, shape=(2,), dtype=int),
-                "goal_xy": Box(low=1, high=self.size - 2, shape=(2,), dtype=int),
             }
         )
 
@@ -112,9 +114,13 @@ class FourRoomsEnv(gym.Env):
         if fps is not None:
             self.metadata["render_fps"] = fps
 
+        # Create member variable to store any state transition graph(s) to be rendered
+        #   Vertices in the graphs represent agent (x,y) as np.ndarray of shape (2,)
+        self.transition_graphs: list[UndirectedGraph[np.ndarray]] = []
+
     def _get_obs(self):
         """Translate the environment's state into an observation."""
-        return {"agent_xy": self._agent_xy, "goal_xy": self._goal_xy}
+        return {"agent_xy": self._agent_xy}
 
     def _get_info(self):
         """Provide auxiliary information for the step() and reset() methods.
@@ -122,6 +128,10 @@ class FourRoomsEnv(gym.Env):
         See _get_obs() for information summarizing the environment's state.
         """
         return {}  # For now, there's not really anything to return.
+
+    def get_goal_xy(self) -> np.ndarray:
+        """Return the environment's current (x,y) goal location."""
+        return self._goal_xy
 
     def xy_to_rc(self, location_xy: np.ndarray) -> np.ndarray:
         """Convert a Cartesian (x,y) coordinate into (row, col) indices.
@@ -138,7 +148,7 @@ class FourRoomsEnv(gym.Env):
         :param      location_xy     Cartesian (x,y) coordinate of shape (2,)
         :returns    index_rc        Index in (row, col) space of shape (2,)
         """
-        assert location_xy.shape == (2,)
+        assert location_xy.shape == (2,), f"xy_to_rc() given shape {location_xy.shape}!"
         return np.array([self.size - 1 - location_xy[1], location_xy[0]])
 
     def rc_to_pix_xy(self, index_rc: np.ndarray) -> np.ndarray:
@@ -150,7 +160,7 @@ class FourRoomsEnv(gym.Env):
         :param      index_rc            Index in (row, col) space of shape (2,)
         :returns    location_pix_xy     Pixel (x,y) coordinate of shape (2,)
         """
-        assert index_rc.shape == (2,)
+        assert index_rc.shape == (2,), f"rc_to_pix_xy() given shape {index_rc.shape}!"
         return np.flip(index_rc)
 
     def xy_to_pix_xy(self, location_xy: np.ndarray) -> np.ndarray:
@@ -162,7 +172,9 @@ class FourRoomsEnv(gym.Env):
         :param      location_xy         Cartesian (x,y) coordinate of shape (2,)
         :returns    location_pix_xy     Pixel (x,y) coordinate of shape (2,)
         """
-        assert location_xy.shape == (2,)
+        assert location_xy.shape == (
+            2,
+        ), f"xy_to_pix_xy() given shape {location_xy.shape}!"
         return np.array([location_xy[0], self.size - 1 - location_xy[1]])
 
     def wall_collision(self, location_xy: np.ndarray) -> bool:
@@ -171,7 +183,9 @@ class FourRoomsEnv(gym.Env):
         :param      location_xy     Cartesian (x,y) coordinate of shape (2,)
         :returns    Boolean indicating if the location collides with a wall
         """
-        assert location_xy.shape == (2,)
+        assert location_xy.shape == (
+            2,
+        ), f"wall_collision() given shape {location_xy.shape}!"
         location_rc = self.xy_to_rc(location_xy)  # Convert to (row, col) space
         return self.walls_rc[tuple(location_rc)]
 
@@ -194,13 +208,14 @@ class FourRoomsEnv(gym.Env):
             print(f"Agent sampled into walls at {self._agent_xy}!")
             self._agent_xy = self.observation_space["agent_xy"].sample()
 
-        # Sample goal's (x,y) location until collision-free with agent and walls
-        self._goal_xy = self.observation_space["goal_xy"].sample()
+        # Sample goal's (x,y) location until collision-free with agent and walls,
+        #   using the space of all possible locations the agent can reach
+        self._goal_xy = self.observation_space["agent_xy"].sample()
         while np.array_equal(self._goal_xy, self._agent_xy) or self.wall_collision(
             self._goal_xy
         ):
             print(f"Goal sampled into collision at {self._goal_xy}!")
-            self._goal_xy = self.observation_space["goal_xy"].sample()
+            self._goal_xy = self.observation_space["agent_xy"].sample()
 
         # Create initial observation and information, then render if needed
         initial_obs = self._get_obs()
@@ -211,25 +226,49 @@ class FourRoomsEnv(gym.Env):
 
         return initial_obs, info
 
-    def step(self, action: int):
-        """Compute the new state of the environment after the given action.
+    def valid_xy(self, location_xy: np.ndarray) -> bool:
+        """Check whether the given (x,y) location is valid in the environment.
 
-        :param      action      Index of the action to be simulated
-        :returns    Tuple containing (obs, reward, terminated, truncated, info)
+        A valid location must satisfy the properties:
+            1. Within the environment's bounds (xy = 1 through xy = 11, inclusive)
+            2. Doesn't collide with any walls
+
+        :param      location_xy     Cartesian (x,y) location of shape (2,)
+        :returns    Boolean indicating if the location is valid
+        """
+        in_bounds = (1 <= location_xy) & (location_xy <= self.size - 2)
+        no_collision = not self.wall_collision(location_xy)
+
+        return in_bounds.all() and no_collision
+
+    def transition(self, agent_xy: np.ndarray, action_idx: int) -> np.ndarray:
+        """Apply the transition function on the given state and action.
+
+        If the action results in an invalid state, no movement occurs!
+
+        :param      agent_xy        Cartesian (x,y) location of the agent, shape (2,)
+        :param      action_idx      Index of the action to be applied
+        :returns    New state resulting from the transition
         """
         # Map the action index to the corresponding movement
-        movement_xy = self._action_to_direction_xy[action]
+        movement_xy = self._action_to_direction_xy[action_idx]
 
         # Compute what the next state would be, if valid
-        new_agent_xy = self._agent_xy + movement_xy
+        new_agent_xy = agent_xy + movement_xy
 
-        # Check if the new state is valid (inside grid and no wall collisions)
-        agent_in_bounds = (1 <= new_agent_xy) & (new_agent_xy <= self.size - 2)
-        no_wall_collisions = not self.wall_collision(new_agent_xy)
+        # Change the state only if the agent's new location is valid
+        #   A location is valid if it's inside the grid and doesn't collide with walls
+        return new_agent_xy if self.valid_xy(new_agent_xy) else agent_xy
 
-        # Update the state only if the agent's new location is valid
-        if agent_in_bounds.all() and no_wall_collisions:
-            self._agent_xy = new_agent_xy
+    def step(self, action_idx: int):
+        """Compute the new state of the environment after the given action.
+
+        :param      action_idx      Index of the action to be simulated
+        :returns    Tuple containing (obs, reward, terminated, truncated, info)
+        """
+
+        # Apply the transition function on the current state
+        self._agent_xy = self.transition(self._agent_xy, action_idx)
 
         # Episode ends iff the agent reaches the goal
         terminated = np.array_equal(self._agent_xy, self._goal_xy)
@@ -242,7 +281,7 @@ class FourRoomsEnv(gym.Env):
             self._render_frame()
 
         # Add the most recent action to the info dictionary
-        info["last_action"] = action
+        info["last_action"] = action_idx
 
         return observation, reward, terminated, False, info
 
@@ -297,6 +336,39 @@ class FourRoomsEnv(gym.Env):
             (agent_pix_xy + 0.5) * cell_pixels,  # Center of the circle
             cell_pixels / 2.5,  # Radius (pixels)
         )
+
+        # Draw the transition graph(s), if there are any
+        # Each graph is an UndirectedGraph[np.ndarray] with (x,y) vertices
+        if self.transition_graphs:
+            graph_colors = [(250, 146, 20)]
+
+            if len(self.transition_graphs) > 1:
+                graph_colors = equally_spaced_colors(len(self.transition_graphs))
+
+            for graph, graph_color in zip(self.transition_graphs, graph_colors):
+
+                for v_xy in graph.V:  # Draw each vertex as a circle on that (x,y)
+                    v_pix_xy = self.xy_to_pix_xy(v_xy)
+
+                    pygame.draw.circle(
+                        canvas,
+                        graph_color,
+                        (v_pix_xy + 0.5) * cell_pixels,  # Center of the circle
+                        cell_pixels / 5,  # Radius (pixels)
+                    )
+
+                for i, adjacency_i in enumerate(graph.adjacent):
+                    i_pix_xy = self.xy_to_pix_xy(graph.V[i])
+                    for j in adjacency_i:
+                        j_pix_xy = self.xy_to_pix_xy(graph.V[j])
+
+                        pygame.draw.line(
+                            canvas,
+                            graph_color,
+                            (i_pix_xy + 0.5) * cell_pixels,  # Center of each circle
+                            (j_pix_xy + 0.5) * cell_pixels,  # Center of each circle
+                            width=3,
+                        )
 
         # Add gridlines throughout the environment (in black)
         for line in range(self.size + 1):

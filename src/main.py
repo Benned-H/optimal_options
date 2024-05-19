@@ -1,6 +1,5 @@
 """This script creates a random agent in the Four Rooms environment."""
 
-from time import sleep
 from envs.four_rooms import FourRoomsEnv
 from agents.random_agent import RandomAgent
 
