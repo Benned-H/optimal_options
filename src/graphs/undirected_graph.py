@@ -1,7 +1,7 @@
 """This module implements a generic undirected graph using adjacency lists."""
 
-import numpy as np
 from typing import TypeVar, Generic
+import numpy as np
 
 T = TypeVar("T")
 
