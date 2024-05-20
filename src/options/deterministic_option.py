@@ -39,7 +39,7 @@ class DeterministicOption(ABC, Generic[StateT, ActionT]):
     def terminates_at(self, s: StateT) -> bool:
         """Check whether the option should terminate at the given state.
 
-        Note: Unlike some formulations of options, this function is deterministic.
+        Note: Unlike some formulations of options [1], this function is deterministic.
 
         :param      s       Low-level state of the underlying MDP
         :returns    Boolean indicating whether the option should terminate at s.

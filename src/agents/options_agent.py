@@ -1,7 +1,7 @@
 """This module defines an HRL agent implementing the options framework."""
 
 from typing import Generic
-from agents.deterministic_option import StateT, ActionT, DeterministicOption
+from options.deterministic_option import StateT, ActionT, DeterministicOption
 
 
 class OptionsAgent(Generic[StateT, ActionT]):
