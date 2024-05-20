@@ -1,8 +1,8 @@
 """This module provides methods to partition a given undirected graph."""
 
-from copy import deepcopy
 import numpy as np
 from graphs.undirected_graph import T, UndirectedGraph
+from graphs.connected_components import ConnectedComponents
 
 
 def uniform_spanning_tree(
@@ -61,20 +61,23 @@ def uniform_spanning_tree(
 
 def decompose(
     n: int, graph: UndirectedGraph[T], rng: np.random.Generator
-) -> list[UndirectedGraph[T]]:
+) -> ConnectedComponents[T]:
     """Decompose the given graph into N random connected components.
 
     To create N random connected components, find a uniform spanning tree, remove
-        N - 1 edges, and finally separate the resulting component subgraphs.
+        N - 1 edges, and finally compute the resulting connected components.
 
     Assertion: The number of components must be at least 1 and at most |V|
 
     :param      n               Number of connected components to create
     :param      graph           Undirected graph to decompose into components
     :param      rng             Random number generator (initialized elsewhere)
-    :returns    List of connected components (each an UndirectedGraph[T] subgraph)
+    :returns    Connected components object (contains component labels for each vertex)
     """
-    assert 1 <= n and n <= graph.size_V, "{n} is an invalid number of components!"
+    assert 1 <= n, f"{n} < 1 is an invalid number of components!"
+    assert (
+        n <= graph.size_V
+    ), f"{n} > {graph.size_V} is an invalid number of components!"
 
     spanning_tree = uniform_spanning_tree(graph, rng)
 
@@ -83,66 +86,11 @@ def decompose(
         edge = spanning_tree.sample_edge(rng)
         spanning_tree.remove_edge(edge)
 
-    # Separate the resulting graph into its connected components
-    connected_components = separate_components(spanning_tree)
+    # Find the connected components of the resulting graph
+    connected_components = ConnectedComponents(spanning_tree)
 
     # Sanity-check - Did we end up with N components, as expected?
-    resulting_n = len(connected_components)
+    resulting_n = connected_components.num_components
     assert resulting_n == n, f"Error: decompose({n}) produced {resulting_n} components!"
 
     return connected_components
-
-
-def separate_components(graph: UndirectedGraph[T]) -> list[UndirectedGraph[T]]:
-    """Separate the given undirected graph into its connected components.
-
-    Reference: Chapter 5.6 (pg. 204) of Algorithms by Jeff Erickson (2019)
-
-    :param      graph       Undirected graph for which connected components are found
-    :returns    List of the graph's connected components, each a new subgraph
-    """
-
-    # Mark all vertices as "not yet included" in any component (indicated by -1)
-    labels = np.full((graph.size_V,), -1, dtype=int)
-    component_num = -1  # Increments as we reach new components
-
-    # Reference: "CountAndLabel" algorithm from "Algorithms" (Erickson, 2019)
-    for v in range(graph.size_V):
-        if labels[v] == -1:  # Vertex not yet labeled; new component!
-            component_num += 1
-
-            # Run DFS on this component, labeling any unlabeled vertices
-            unexplored = [v]
-            while unexplored:
-                u = unexplored.pop()
-
-                if labels[u] == -1:  # Unlabeled vertex
-                    labels[u] = component_num
-
-                    for neighbor in graph.adjacent[u]:
-                        unexplored.append(neighbor)
-
-    # Sanity-check: 1) All vertices labeled? and 2) Last component non-empty?
-    assert np.all(labels != -1), "All vertices should have a component label!"
-    assert np.any(labels == component_num), "Last component should be non-empty!"
-
-    # Construct each connected component from the vertex labels
-    components: list[UndirectedGraph[T]] = []
-    for c in range(component_num + 1):
-        v_indices = [v_idx for (v_idx, _) in enumerate(graph.V) if labels[v_idx] == c]
-        vertices = [graph.V[v_idx] for v_idx in v_indices]
-
-        component = UndirectedGraph[T](vertices, [])
-
-        # Now, add the component's edges (i,j) separately
-        # NOTE: Indices (v,u) are in graph.V but indices (i,j) will be in component.V
-        for i_idx, v_idx in enumerate(v_indices):
-            for u_idx in graph.adjacent[v_idx]:
-                assert u_idx in v_indices, "Neighbors should be in the same component!"
-                j_idx = v_indices.index(u_idx)
-                component.add_edge((i_idx, j_idx))
-
-        # Add the new component into the list of components
-        components.append(component)
-
-    return components
