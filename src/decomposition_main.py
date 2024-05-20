@@ -4,7 +4,6 @@ import numpy as np
 from envs.four_rooms import FourRoomsEnv
 from graphs.state_transition_graph import get_transition_graph
 from graphs.graph_partition import uniform_spanning_tree, decompose
-from graphics.colors import equally_spaced_colors
 
 
 def main():
@@ -48,7 +47,7 @@ def main():
             continue
 
         components = decompose(num_components, spanning_tree, rng)
-        env.transition_graphs = components
+        env.transition_graphs = components.get_component_subgraphs()
         env.reset()
 
 
