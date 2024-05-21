@@ -9,7 +9,7 @@ StateT = TypeVar("StateT")
 class Node(Generic[StateT], ABC):
     """An abstract, generic node data structure used during A* search."""
 
-    def __init__(self, state: StateT, prev: Node[StateT], a_cost: float, h: float):
+    def __init__(self, state: StateT, prev: "Node[StateT]", a_cost: float, h: float):
         """Initialize the node using its stored state and A*-relevant data.
 
         :param      state       State to be stored in this node
@@ -21,15 +21,20 @@ class Node(Generic[StateT], ABC):
 
         self.prev = prev  # Pointer to parent node during A* search
 
-        self.g = prev.g + a_cost  # Cost to reach this node
+        prev_g = 0  # Handle special case for initial state (when prev is None)
+        if self.prev is not None:
+            prev_g = prev.g
+
+        self.g = prev_g + a_cost  # Cost to reach this node
         self.f = self.g + h  # Estimated total cost through this node
 
+    @abstractmethod
     def __str__(self) -> str:
         """Create a human-readable string representing this node."""
-        return str(self.state) + f": g = {self.g}, f = {self.f}"
+        pass
 
     @abstractmethod
-    def __eq__(self, other: Node[StateT]) -> bool:
+    def __eq__(self, other: "Node[StateT]") -> bool:
         """Check whether the given node contains the same state.
 
         Overrides the `==` operator for these objects, allowing "node equality" to
@@ -71,20 +76,23 @@ class AStarPlanner(Generic[StateT], ABC):
     def push_open_list(self, n: Node[StateT]):
         """Push the given node to the planner's open list.
 
-        The node will only be added to the open list if it's the lowest-cost node
-            to its stored state out of all nodes in the open list. That is, if there's
-            an open node with the same state, the better node (based on f) is kept.
+        The node will be added if it contains a new state, or if it's the lowest-cost
+            node containing its state out of all nodes in the open list (based on f).
 
         :param      n       Node to potentially add to the planner's open list
         """
+
         for o_idx, o in enumerate(self.open_list):
             if o == n:  # These nodes have the same state...
 
-                if n.f < o.f:  # New node is better!
+                if n.f < o.f:  # Node is better; remove the old one!
                     self.open_list.pop(o_idx)
-                    self.open_list.append(n)
+                    break
+                else:  # Otherwise, this node was worse and we can exit
+                    return
 
-                return  # The open list should only store at most one node per state
+        # If here, either there was no node with the same state, or this node won!
+        self.open_list.append(n)
 
     def state_closed(self, state: StateT):
         """Check whether any node in the closed list contains the given state.
@@ -95,7 +103,7 @@ class AStarPlanner(Generic[StateT], ABC):
         return any([node for node in self.closed_list if node.state == state])
 
     @abstractmethod
-    def unclosed_neighbors(self, node: Node[StateT]) -> set[Node[StateT]]:
+    def unclosed_neighbors(self, node: Node[StateT]) -> list[Node[StateT]]:
         """Find the unclosed neighboring nodes of the given node.
 
         This method simplifies the overall A* process by combining what could have been
@@ -106,7 +114,7 @@ class AStarPlanner(Generic[StateT], ABC):
             be better to have an abstract StateSpace class, but this is fine for now.
 
         :param      node        Node during A* search whose neighbors are expanded
-        :returns    Set of unclosed nodes resulting from valid actions from the node
+        :returns    List of unclosed nodes resulting from valid actions from the node
         """
         pass
 

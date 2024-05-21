@@ -24,6 +24,10 @@ class FourRoomsNode(Node[StateV]):
         """
         super().__init__(state, prev, a_cost, h)
 
+    def __str__(self) -> str:
+        """Create a human-readable string representing this node."""
+        return f"State: {int(self.state)}, g: {self.g}, f: {self.f}"
+
     def __eq__(self, other: Node[StateV]) -> bool:
         """Check whether the given node contains the same state.
 
@@ -48,7 +52,7 @@ class FourRoomsPlanner(AStarPlanner[StateV]):
 
         super().__init__()
 
-    def unclosed_neighbors(self, node: Node[StateV]) -> set[Node[StateV]]:
+    def unclosed_neighbors(self, node: Node[StateV]) -> list[Node[StateV]]:
         """Find the unclosed neighboring nodes of the given node.
 
         For the Four Rooms environment, neighboring states during A* will correspond
@@ -59,18 +63,18 @@ class FourRoomsPlanner(AStarPlanner[StateV]):
             be better to have an abstract StateSpace class, but this is fine for now.
 
         :param      node        Node during A* search whose neighbors are expanded
-        :returns    Set of unclosed nodes resulting from valid actions from the node
+        :returns    List of unclosed nodes resulting from valid actions from the node
         """
         neighbors = self.transition_graph.adjacent[node.state]
         unclosed_neighbors = [n_v for n_v in neighbors if not self.state_closed(n_v)]
 
         # Now convert the neighboring states (v_idxs) into Node objects
-        neighbor_nodes = set()
+        neighbor_nodes = []
         for neighbor_state in unclosed_neighbors:
             action_cost = self.cost(node.state, neighbor_state)
             h_value = self.h(neighbor_state, self.goals)
             neighbor_node = FourRoomsNode(neighbor_state, node, action_cost, h_value)
-            neighbor_nodes.add(neighbor_node)
+            neighbor_nodes.append(neighbor_node)
 
         return neighbor_nodes
 

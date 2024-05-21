@@ -8,9 +8,10 @@ from optimal_behaviors.abstract_a_star import AStarPlanner
 from optimal_behaviors.four_rooms_planner import FourRoomsPlanner
 
 PathT = NewType("PathT", list[int])
+TaskT = NewType("TaskT", tuple[int, int])
 
 
-def generate_tasks(env: FourRoomsEnv) -> list[tuple[int, int]]:
+def generate_tasks(env: FourRoomsEnv) -> list[TaskT]:
     """Generate all shortest-path problems (s0, g) for the given environment.
 
     Each "task" (i.e., shortest-path problem) includes a start state and goal state.
@@ -37,16 +38,18 @@ def solve_task(s0_g: tuple[int, int], planner: AStarPlanner[int]) -> PathT:
     """
     s0, g = s0_g
 
-    path = planner.a_star(s0, set(g))
+    path = planner.a_star(s0, {g})
 
-    # Sanity-check: Does the path begin with s0 and end with g?
-    assert path[0] == s0, f"Path found by A* should begin with initial state {s0}!"
-    assert path[-1] == g, f"Path found by A* should end with goal state {g}!"
+    if path:  # Sanity-check: Does the path begin with s0 and end with g?
+        assert path[0] == s0, f"Path found by A* should begin with initial state {s0}!"
+        assert path[-1] == g, f"Path found by A* should end with goal state {g}!"
+    else:
+        print(f"No path found for task (s0 = {s0}, g = {g})")
 
     return path
 
 
-def generate_optimal_behaviors(env: FourRoomsEnv) -> list[PathT]:
+def generate_optimal_behaviors(env: FourRoomsEnv) -> list[tuple[TaskT, PathT]]:
     """Generate the dataset of optimal behaviors for the given environment.
 
     Each "optimal behavior" is a list of states forming the optimal path for a task.
@@ -54,11 +57,13 @@ def generate_optimal_behaviors(env: FourRoomsEnv) -> list[PathT]:
         corresponding state within the environment's transition graph.
 
     :param      env     Environment for which optimal behaviors are found
-    :returns    List of optimal behaviors (paths over environment graph) for all tasks
+    :returns    List of (task, optimal behavior path) tuples
     """
     all_tasks = generate_tasks(env)  # List of (s0, g) tuples
 
-    planner = FourRoomsPlanner()
+    planner = FourRoomsPlanner(env)
     task_solutions = [solve_task(t, planner) for t in all_tasks]
 
-    return task_solutions
+    tasks_paths = [(all_tasks[i], task_solutions[i]) for i in range(len(all_tasks))]
+
+    return tasks_paths
