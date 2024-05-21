@@ -3,8 +3,7 @@
 from typing import NewType
 import numpy as np
 
-from envs.four_rooms import FourRoomsEnv
-from graphs.state_transition_graph import get_transition_graph
+from graphs.undirected_graph import UndirectedGraph
 from optimal_behaviors.abstract_a_star import Node, AStarPlanner
 
 # We'll perform A* search over vertex indices in the transition graph
@@ -24,9 +23,9 @@ class FourRoomsNode(Node[StateV]):
         """
         super().__init__(state, prev, a_cost, h)
 
-    def __str__(self) -> str:
-        """Create a human-readable string representing this node."""
-        return f"State: {int(self.state)}, g: {self.g}, f: {self.f}"
+    def __repr__(self) -> str:
+        """Create an unambiguous string representation for this node."""
+        return f"State: {int(self.state)}, g: {self.g}, f: {self.f}, prev: {self.prev}"
 
     def __eq__(self, other: Node[StateV]) -> bool:
         """Check whether the given node contains the same state.
@@ -43,12 +42,12 @@ class FourRoomsNode(Node[StateV]):
 class FourRoomsPlanner(AStarPlanner[StateV]):
     """A concrete A* planner for the Four Rooms environment."""
 
-    def __init__(self, env: FourRoomsEnv):
+    def __init__(self, graph: UndirectedGraph[np.ndarray]):
         """Initialize the A* planner using the abstract class constructor.
 
-        :param      env     Four Rooms environment defining state transition graph
+        :param      graph       State transition graph for the Four Rooms domain
         """
-        self.transition_graph = get_transition_graph(env)
+        self.transition_graph = graph
 
         super().__init__()
 

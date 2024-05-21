@@ -1,13 +1,13 @@
 """This module defines an abstract A* planner over generic types."""
 
-from typing import TypeVar, Generic, NewType
+from typing import TypeVar, Generic
 from abc import ABC, abstractmethod
 
 StateT = TypeVar("StateT")
 
 
 class Node(Generic[StateT], ABC):
-    """An abstract, generic node data structure used during A* search."""
+    """An abstract, generic node used to structure A* search."""
 
     def __init__(self, state: StateT, prev: "Node[StateT]", a_cost: float, h: float):
         """Initialize the node using its stored state and A*-relevant data.
@@ -29,8 +29,8 @@ class Node(Generic[StateT], ABC):
         self.f = self.g + h  # Estimated total cost through this node
 
     @abstractmethod
-    def __str__(self) -> str:
-        """Create a human-readable string representing this node."""
+    def __repr__(self) -> str:
+        """Create an unambiguous string representation for this node."""
         pass
 
     @abstractmethod
@@ -163,7 +163,7 @@ class AStarPlanner(Generic[StateT], ABC):
 
         :param      s0      Initial state for the search problem
         :param      goals   Set of goal states to be reached
-        :returns    Optimal path (list of nodes) from s0 to some goal state, or []
+        :returns    Optimal path (list of states) from s0 to some goal state, or []
         """
         self.reset(s0, goals)  # Create a node for the starting state and store goals
 

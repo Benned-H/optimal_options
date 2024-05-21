@@ -1,9 +1,9 @@
 """This module defines functions to generate optimal behaviors for Four Rooms."""
 
 from typing import NewType
+import numpy as np
 
-from envs.four_rooms import FourRoomsEnv
-from graphs.state_transition_graph import get_transition_graph
+from graphs.undirected_graph import UndirectedGraph
 from optimal_behaviors.abstract_a_star import AStarPlanner
 from optimal_behaviors.four_rooms_planner import FourRoomsPlanner
 
@@ -11,16 +11,15 @@ PathT = NewType("PathT", list[int])
 TaskT = NewType("TaskT", tuple[int, int])
 
 
-def generate_tasks(env: FourRoomsEnv) -> list[TaskT]:
-    """Generate all shortest-path problems (s0, g) for the given environment.
+def generate_tasks(graph: UndirectedGraph[np.ndarray]) -> list[TaskT]:
+    """Generate all shortest-path problems (s0, g) for the given graph.
 
     Each "task" (i.e., shortest-path problem) includes a start state and goal state.
         Problems where s0 and g are the same state are excluded.
 
-    :param      env     Environment used to generate a state transition graph
+    :param      graph       State transition graph for the underlying MDP
     :returns    List of non-trivial shortest-path problems, each a tuple (s0, g)
     """
-    graph = get_transition_graph(env)
 
     # Generate all (s0, g) pairs, then filter out trivial problems (s0 == g)
     all_pairs = [(s0, g) for s0 in range(graph.size_V) for g in range(graph.size_V)]
@@ -49,19 +48,20 @@ def solve_task(s0_g: tuple[int, int], planner: AStarPlanner[int]) -> PathT:
     return path
 
 
-def generate_optimal_behaviors(env: FourRoomsEnv) -> list[tuple[TaskT, PathT]]:
-    """Generate the dataset of optimal behaviors for the given environment.
+def generate_optimal_behaviors(
+    graph: UndirectedGraph[np.ndarray],
+) -> list[tuple[TaskT, PathT]]:
+    """Generate the dataset of optimal behaviors for the given graph.
 
     Each "optimal behavior" is a list of states forming the optimal path for a task.
-        The "states" in each output path are represented as the vertex index for the
-        corresponding state within the environment's transition graph.
+        These "states" correspond to vertex indices in the state transition graph.
 
-    :param      env     Environment for which optimal behaviors are found
+    :param      graph       State transition graph for the underlying MDP
     :returns    List of (task, optimal behavior path) tuples
     """
-    all_tasks = generate_tasks(env)  # List of (s0, g) tuples
+    all_tasks = generate_tasks(graph)  # List of (s0, g) tuples
 
-    planner = FourRoomsPlanner(env)
+    planner = FourRoomsPlanner(graph)
     task_solutions = [solve_task(t, planner) for t in all_tasks]
 
     tasks_paths = [(all_tasks[i], task_solutions[i]) for i in range(len(all_tasks))]

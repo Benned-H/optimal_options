@@ -22,7 +22,7 @@ def main():
     env.transition_graphs = []  # Clear the spanning tree after displaying once
 
     # Compute the optimal behaviors only once and keep them around
-    tasks_behaviors = generate_optimal_behaviors(env)
+    tasks_behaviors = generate_optimal_behaviors(graph)
 
     while True:
         user_input = input("Press 'enter' to display another task, or 'q' to quit.\n")
