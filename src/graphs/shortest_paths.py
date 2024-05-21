@@ -3,6 +3,7 @@
 import numpy as np
 from envs.four_rooms import FourRoomsEnv
 
+
 def target_behaviors(env: FourRoomsEnv) -> list[tuple[np.ndarray, int]]:
     """Compute target behaviors for the given environment's current goal state.
 

@@ -15,7 +15,7 @@ def main():
     graph = get_transition_graph(env)
 
     rng = np.random.default_rng()
-    
+
     spanning_tree = uniform_spanning_tree(graph, rng)
     env.transition_graphs = [spanning_tree]
     env.reset()
@@ -46,6 +46,7 @@ def main():
 
         # Create options using the sampled region-based decomposition
         agent = RegionBasedAgent(env, components)
+
 
 if __name__ == "__main__":
     main()
