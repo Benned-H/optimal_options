@@ -11,11 +11,10 @@ from abc import ABC, abstractmethod
 from typing import TypeVar, Generic
 
 StateT = TypeVar("StateT")
-ActionT = TypeVar("ActionT")
 
 
-class DeterministicOption(ABC, Generic[StateT, ActionT]):
-    """An abstract option (extended HRL action) over generic state and action types."""
+class DeterministicOption(Generic[StateT], ABC):
+    """An abstract option (extended HRL action) over generic states."""
 
     @abstractmethod
     def can_initiate(self, s: StateT) -> bool:
@@ -27,11 +26,11 @@ class DeterministicOption(ABC, Generic[StateT, ActionT]):
         pass
 
     @abstractmethod
-    def pi(self, s: StateT) -> ActionT:
+    def pi(self, s: StateT) -> int:
         """Get the option policy's action for the given state.
 
         :param      s       Low-level state of the underlying MDP
-        :returns    Low-level action selected by the option's policy at state s.
+        :returns    Action index selected by the option's policy at state s.
         """
         pass
 
