@@ -118,6 +118,9 @@ class FourRoomsEnv(gym.Env):
         #   Vertices in the graphs represent agent (x,y) as np.ndarray of shape (2,)
         self.transition_graphs: list[UndirectedGraph[np.ndarray]] = []
 
+        # Member variable to store paths over (x,y) states to be rendered
+        self.path: list[np.ndarray] = []
+
     def _get_obs(self):
         """Translate the environment's state into an observation."""
         return {"agent_xy": self._agent_xy}
@@ -132,6 +135,15 @@ class FourRoomsEnv(gym.Env):
     def get_goal_xy(self) -> np.ndarray:
         """Return the environment's current (x,y) goal location."""
         return self._goal_xy
+
+    def set_task(self, s0_xy: np.ndarray, g_xy: np.ndarray):
+        """Set the environment's state to the given (s0, g) task.
+
+        :param      s0_xy       Initial (x,y) state
+        :param      g_xy        Goal (x,y) state
+        """
+        self._agent_xy = s0_xy
+        self._goal_xy = g_xy
 
     def xy_to_rc(self, location_xy: np.ndarray) -> np.ndarray:
         """Convert a Cartesian (x,y) coordinate into (row, col) indices.
@@ -297,6 +309,14 @@ class FourRoomsEnv(gym.Env):
         if self.render_mode == "human":
             return None
 
+    def force_render(self):
+        """Force the environment to render frames specified by `self.render_mode`."""
+        if self.render_mode == "rgb_array" or self.render_mode == "human":
+            return self._render_frame()
+
+        if self.render_mode is None:
+            return None
+
     def _render_frame(self):
         """Render a frame representing the current state of the environment."""
 
@@ -336,6 +356,36 @@ class FourRoomsEnv(gym.Env):
             (agent_pix_xy + 0.5) * cell_pixels,  # Center of the circle
             cell_pixels / 2.5,  # Radius (pixels)
         )
+
+        # Draw the stored path, if there is one
+        if self.path:
+            path_color = (27, 97, 39)
+
+            # Draw every state and edges between the states
+            for idx, state_xy in enumerate(self.path):
+
+                # Draw the state using pixel coordinates
+                state_pix_xy = self.xy_to_pix_xy(state_xy)
+
+                pygame.draw.circle(
+                    canvas,
+                    path_color,
+                    (state_pix_xy + 0.5) * cell_pixels,  # Center of the circle
+                    cell_pixels / 5,  # Radius (pixels)
+                )
+
+                # Draw edge to the next state, if there is one
+                if idx < len(self.path) - 1:
+                    next_state_xy = self.path[idx + 1]
+                    next_state_pix_xy = self.xy_to_pix_xy(next_state_xy)
+
+                    pygame.draw.line(
+                        canvas,
+                        path_color,
+                        (state_pix_xy + 0.5) * cell_pixels,
+                        (next_state_pix_xy + 0.5) * cell_pixels,
+                        width=3,
+                    )
 
         # Draw the transition graph(s), if there are any
         # Each graph is an UndirectedGraph[np.ndarray] with (x,y) vertices
