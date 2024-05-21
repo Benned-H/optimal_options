@@ -36,7 +36,7 @@ class FourRoomsNode(Node[StateV]):
         return self.state == other.state
 
 
-class FourRoomsAStarPlanner(AStarPlanner[StateV]):
+class FourRoomsPlanner(AStarPlanner[StateV]):
     """A concrete A* planner for the Four Rooms environment."""
 
     def __init__(self, env: FourRoomsEnv):

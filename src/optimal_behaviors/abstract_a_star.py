@@ -1,10 +1,9 @@
 """This module defines an abstract A* planner over generic types."""
 
-from typing import TypeVar, Generic
+from typing import TypeVar, Generic, NewType
 from abc import ABC, abstractmethod
 
 StateT = TypeVar("StateT")
-NodeT = TypeVar("NodeT")
 
 
 class Node(Generic[StateT], ABC):
@@ -42,7 +41,7 @@ class Node(Generic[StateT], ABC):
         pass
 
 
-class AStarPlanner(Generic[StateT, NodeT], ABC):
+class AStarPlanner(Generic[StateT], ABC):
     """An abstract A* planner over a generic state representation."""
 
     def __init__(self):
@@ -51,21 +50,21 @@ class AStarPlanner(Generic[StateT, NodeT], ABC):
         self.closed_list: list[Node[StateT]] = []
         self.goals: set[StateT] = set()
 
-    def backtrack(self, node: Node[StateT]) -> list[Node[StateT]]:
+    def backtrack(self, node: Node[StateT]) -> list[StateT]:
         """Backtrack from the given node to find the path it represents.
 
         The backtracking process uses the n.prev pointers to recursively find each
-            node's parent node, resulting in a path from s0 to the given node.
+            node's parent node, resulting in a path from s0 to the given node's state.
 
         :param      node            Node for which the preceding path is found
-        :returns    List of nodes from the initial state to the given node
+        :returns    List of states from the initial state to the given node's state
         """
-        curr = node
-        path = [node]  # We'll build the path in reverse order
+        curr_node = node
+        path = [node.state]  # We'll build the path in reverse order
 
-        while curr.prev is not None:
-            path.insert(0, curr.prev)
-            curr = curr.prev
+        while curr_node.prev is not None:
+            curr_node = curr_node.prev
+            path.insert(0, curr_node.state)
 
         return path
 
@@ -146,14 +145,17 @@ class AStarPlanner(Generic[StateT, NodeT], ABC):
         """
         pass
 
-    def a_star(self, s0: StateT, goals: set[StateT]) -> list[Node[StateT]]:
+    def a_star(self, s0: StateT, goals: set[StateT]) -> list[StateT]:
         """Run A* search on the given state space search problem.
+
+        The output solution is a path (list of states) from s0 to some goal state,
+            or an empty list when no path could be found.
 
         This function works with the abstract functions outlined above.
 
         :param      s0      Initial state for the search problem
         :param      goals   Set of goal states to be reached
-        :returns    Optimal path (list of nodes) from s0 to some goal state
+        :returns    Optimal path (list of nodes) from s0 to some goal state, or []
         """
         self.reset(s0, goals)  # Create a node for the starting state and store goals
 
