@@ -59,6 +59,10 @@ class ConnectedComponents(Generic[T]):
 
         return num_components, labels
 
+    def get_graph_copy(self) -> UndirectedGraph[T]:
+        """Return a copy of the stored undirected graph."""
+        return deepcopy(self._graph)
+
     def get_component_subgraphs(self) -> list[UndirectedGraph[T]]:
         """Export the stored connected component labels as separate subgraphs.
 
@@ -85,3 +89,14 @@ class ConnectedComponents(Generic[T]):
             components.append(component)
 
         return components
+
+    def get_vertex_indices(self, component_id: int) -> set[int]:
+        """Return the vertex indices in the specified connected component.
+
+        :param      component_id    ID of the component of the returned vertices
+        :returns    Set of vertex indices in the requested component
+        """
+        in_component = self.labels == component_id
+        v_indices = {v for v in range(self._graph.size_V) if in_component[v]}
+
+        return v_indices
