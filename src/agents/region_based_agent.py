@@ -50,7 +50,7 @@ class RegionBasedAgent:
         return sum([len(region_options) for region_options in self.options])
 
     def find_subgoals(self, path: PathT) -> np.ndarray:
-        """Find the relevant subgoal for each state in the path.
+        """Find the relevant subgoal for each state in the given path.
 
         At each state, the agent can begin (or remain within) a subgoal option
             pursuing a particular exit state somewhere in the path's future.
@@ -64,7 +64,7 @@ class RegionBasedAgent:
         # Track what the agent's subgoal should be at each state in the path
         subgoals = np.full((len(path),), -1, dtype=int)  # -1 means "no subgoal"
 
-        # Can the agent start a subgoal option from each state?
+        # From each state in the path, can the agent initiate a subgoal option?
         curr_idx = 0
         while curr_idx < len(path):
 
@@ -113,7 +113,7 @@ class RegionBasedAgent:
         subgoals = self.find_subgoals(path)  # Relevant subgoal for each state
 
         # Begin each "possible actions" value as 1, representing one possible outcome.
-        #   Other possible actions will be multiplied in as we go along.
+        #   Other possible actions will be multiplied in as we proceed.
         possibilities = np.full((len(path),), 1, dtype=int)
 
         for idx, curr_state_v in enumerate(path):
