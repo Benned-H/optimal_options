@@ -1,4 +1,4 @@
-"""This script provides a function to create an example graph decomposition."""
+"""This module provides a function to create an example graph decomposition."""
 
 import numpy as np
 
