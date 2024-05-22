@@ -126,6 +126,10 @@ class FourRoomsEnv(gym.Env):
         # Member variable to store paths over (x,y) states to be rendered
         self.path: list[np.ndarray] = []
 
+        # Flag to display the vertex number of each state
+        self.show_vertex_idx = False
+        self.font: pygame.font.SysFont = None  # Font used to write rendered text
+
     def _get_obs(self):
         """Translate the environment's state into an observation."""
         return {"agent_xy": self._agent_xy}
@@ -442,6 +446,20 @@ class FourRoomsEnv(gym.Env):
                 (cell_pixels * line, self.window_size),  # End position (x,y)
                 width=3,
             )
+
+        # If necessary, show the vertex numbers of the currently stored graph
+        if self.show_vertex_idx:
+            graph = self.transition_graphs[0]
+
+            for v_idx, v_xy in enumerate(graph.V):
+                v_pix_xy = self.xy_to_pix_xy(v_xy)  # Pixel (x,y) of vertex
+
+                # Render the vertex index as a string
+                text_size = np.array(self.font.size(str(v_idx)))
+                text_surface = self.font.render(str(v_idx), False, (0, 0, 0))
+                text_pix_xy = (v_pix_xy + 0.5) * cell_pixels - 0.5 * text_size
+
+                canvas.blit(text_surface, text_pix_xy)
 
         # In "human" mode, copy the drawing from `canvas` to the visible window
         if self.render_mode == "human":
