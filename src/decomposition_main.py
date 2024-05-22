@@ -28,7 +28,12 @@ def main():
 
     while True:
         user_input = input(
-            "Please input one of the following:\n\tNumber of components (int)\n\t'r' to reset the spanning tree\n\t'q' to quit\n"
+            (
+                "Please input one of the following:\n"
+                "\tNumber of components (int)\n"
+                "\t'r' to reset the spanning tree\n"
+                "\t'q' to quit\n"
+            )
         )
 
         if user_input == "q":

@@ -81,21 +81,26 @@ class FourRoomsEnv(gym.Env):
             }
         )
 
-        # Nine possible actions: move the agent into an adjacent square or wait
-        self.action_space = Discrete(9)
-
         # Maps abstract action indices to (x,y) directions in Cartesian space
         self._action_to_direction_xy = {
+            # 0: np.array([1, 0]),  # Right
+            # 1: np.array([1, 1]),  # Up-Right
+            # 2: np.array([0, 1]),  # Up
+            # 3: np.array([-1, 1]),  # Up-Left
+            # 4: np.array([-1, 0]),  # Left
+            # 5: np.array([-1, -1]),  # Down-Left
+            # 6: np.array([0, -1]),  # Down
+            # 7: np.array([1, -1]),  # Down-Right
+            # 8: np.array([0, 0]),  # No-op
             0: np.array([1, 0]),  # Right
-            1: np.array([1, 1]),  # Up-Right
-            2: np.array([0, 1]),  # Up
-            3: np.array([-1, 1]),  # Up-Left
-            4: np.array([-1, 0]),  # Left
-            5: np.array([-1, -1]),  # Down-Left
-            6: np.array([0, -1]),  # Down
-            7: np.array([1, -1]),  # Down-Right
-            8: np.array([0, 0]),  # No-op
+            1: np.array([0, 1]),  # Up
+            2: np.array([-1, 0]),  # Left
+            3: np.array([0, -1]),  # Down
+            4: np.array([0, 0]),  # No-op
         }
+
+        # Possible actions: move the agent into an adjacent square or wait
+        self.action_space = Discrete(len(self._action_to_direction_xy))
 
         # Ensure that render_mode is None, or supported by the environment
         assert render_mode is None or render_mode in self.metadata["render_modes"]
