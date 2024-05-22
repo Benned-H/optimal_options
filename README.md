@@ -24,8 +24,8 @@ To complete this project, the following things will be needed:
 - [ ] Visualize the "best" options and portable options (Fig. 1A of OBH)
     - [ ] Options case - Show which nodes were subgoals
         - [x] Represent decompositions of the undirected graph
-        - [ ] Create subgoals from graph decompositions
-        - [ ] Define an `Option` class
+        - [x] Create subgoals from graph decompositions
+        - [x] Define an `Option` class
         - [ ] Compute model evidence from a set of options
         - [ ] Compute optimal options using subgoal formulation
     - [ ] Portable options case - Show which "visual kernels" worked best/worst

@@ -63,6 +63,18 @@ class ConnectedComponents(Generic[T]):
         """Return a copy of the stored undirected graph."""
         return deepcopy(self._graph)
 
+    def get_size_V(self) -> int:
+        """Return the size of the vertex space of the stored undirected graph."""
+        return self._graph.size_V
+
+    def get_degree(self, v_idx: int) -> int:
+        """Return the degree of the given vertex within the stored undirected graph.
+
+        :param      v_idx       Index of the vertex whose degree is returned
+        :returns    Degree (number of neighbors) of the given vertex
+        """
+        return len(self._graph.adjacent[v_idx])
+
     def get_component_subgraphs(self) -> list[UndirectedGraph[T]]:
         """Export the stored connected component labels as separate subgraphs.
 

@@ -1,6 +1,7 @@
 """This module implements a subgoal option based on a region of the state graph."""
 
 from typing import NewType
+import numpy as np
 
 from options.deterministic_option import DeterministicOption
 
@@ -10,16 +11,26 @@ StateV = NewType("StateV", int)  # Represents a vertex index in the transition g
 class RegionSubgoalOption(DeterministicOption[StateV]):
     """A subgoal option based on a region of the state transition graph."""
 
-    def __init__(self, entrances: set[StateV], exits: set[StateV], subgoal: StateV):
+    def __init__(
+        self,
+        entrances: set[StateV],
+        exits: set[StateV],
+        subgoal: StateV,
+        num_states: int,
+    ):
         """Initialize a subgoal option given its entrances, exits, and subgoal.
 
         :param      entrances       Entrance states of the region (as vertex indices)
         :param      exits           Exit states of the region (as vertex indices)
         :param      subgoal         Vertex index of the option's subgoal
+        :param      num_states      Size of the state space for this option
         """
         self.entrances = entrances  # Defines the option's initiation set
         self.exits = exits  # Defines the option's termination set
         self.subgoal = subgoal
+
+        # Used to track which states have been constrained for the option's policy
+        self.constrained = np.full((num_states,), False, dtype=bool)
 
     def can_initiate(self, s: StateV) -> bool:
         """Check if the option can be initiated at the given state.
