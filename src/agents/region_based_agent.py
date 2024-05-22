@@ -100,6 +100,9 @@ class RegionBasedAgent:
     def possible_actions(self, path: PathT) -> np.ndarray:
         """Find the number of possible actions for the agent at each state in the path.
 
+        The output array is *one shorter than the path* because the agent doesn't
+            choose an action for the final state in the path.
+
         Each state will correspond to one of four cases:
             1. Task-specific policy - Low-level actions + available options
             2. Option-specific policy - Low-level actions
@@ -108,15 +111,15 @@ class RegionBasedAgent:
 
         :param      path        Sequence of states (each a vertex index)
         :returns    Array containing the number of possible actions for each state
-            Note:  This array will have shape (N,) where N = len(path)
+            Note:  This array will have shape (N - 1,) where N = len(path)
         """
         subgoals = self.find_subgoals(path)  # Relevant subgoal for each state
 
         # Begin each "possible actions" value as 1, representing one possible outcome.
         #   Other possible actions will be multiplied in as we proceed.
-        possibilities = np.full((len(path),), 1, dtype=int)
+        possibilities = np.full((len(path) - 1,), 1, dtype=int)
 
-        for idx, curr_state_v in enumerate(path):
+        for idx, curr_state_v in enumerate(path[:-1]):
             curr_subgoal = subgoals[idx]
             curr_region = self.regions.labels[curr_state_v]
 
@@ -160,13 +163,13 @@ class RegionBasedAgent:
                 continue  # Jump to the next state in the path
 
             # Otherwise, we care about the out-degree of the current state
-            degree_v = self.regions.graph.adjacent[curr_state_v]
+            degree_v = len(self.regions.graph.adjacent[curr_state_v])
 
             if constrain_pi_t:
 
                 # The region's options are available only if we're in an entrance
                 available_options = 0
-                if curr_state_v in self.region_entrances[curr_region]:
+                if first_state or (curr_state_v in self.region_entrances[curr_region]):
                     available_options = len(self.options[curr_region])
 
                 # Task-level policies can select primitive actions or available options
