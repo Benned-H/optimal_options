@@ -88,6 +88,7 @@ def decompose(
 
     # Find the connected components of the resulting graph
     connected_components = ConnectedComponents(spanning_tree)
+    connected_components.graph = graph  # Store the original graph's connectivity
 
     # Sanity-check - Did we end up with N components, as expected?
     resulting_n = connected_components.num_components

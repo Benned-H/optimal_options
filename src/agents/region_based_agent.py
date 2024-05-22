@@ -20,7 +20,7 @@ class RegionBasedAgent:
         self.regions = regions  # Store the agent-specific graph decomposition
 
         region_ids = [r for r in range(regions.num_components)]
-        size_V = regions.get_size_V()  # To be passed to the subgoal options
+        size_V = regions.graph.size_V  # To be passed to the subgoal options
 
         # The agent has options for each exit state (subgoal) of each region
         #   Indexing into self.options by region ID gives that region's options
@@ -160,7 +160,7 @@ class RegionBasedAgent:
                 continue  # Jump to the next state in the path
 
             # Otherwise, we care about the out-degree of the current state
-            degree_v = self.regions.get_degree(curr_state_v)
+            degree_v = self.regions.graph.adjacent[curr_state_v]
 
             if constrain_pi_t:
 

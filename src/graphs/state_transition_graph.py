@@ -73,10 +73,8 @@ def entrance_states(
     """
     entrances: set[int] = set()
 
-    graph = regions.get_graph_copy()
-
     for v_idx in regions.get_vertex_indices(region_id):
-        neighbors = graph.adjacent[v_idx]
+        neighbors = regions.graph.adjacent[v_idx]
 
         # Find the region ID for each neighbor of this vertex
         neighbor_regions = [regions.labels[n] for n in neighbors]
@@ -104,13 +102,11 @@ def exit_states(regions: ConnectedComponents[np.ndarray], region_id: int) -> set
     """
     exits: set[int] = set()
 
-    graph = regions.get_graph_copy()
-
     in_region = regions.get_vertex_indices(region_id)
-    outside_region = [v for v in range(graph.size_V) if v not in in_region]
+    outside_region = [v for v in range(regions.graph.size_V) if v not in in_region]
 
     for v_idx in outside_region:
-        neighbors = graph.adjacent[v_idx]
+        neighbors = regions.graph.adjacent[v_idx]
 
         # Find the region ID for each neighbor of this vertex
         neighbor_regions = [regions.labels[n] for n in neighbors]

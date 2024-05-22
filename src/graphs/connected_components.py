@@ -1,6 +1,5 @@
 """This module provides a class to represent and compute connected components."""
 
-from copy import deepcopy
 from typing import Generic
 import numpy as np
 from graphs.undirected_graph import T, UndirectedGraph
@@ -14,11 +13,11 @@ class ConnectedComponents(Generic[T]):
 
         :param      graph       Graph for which connected components are found
         """
-        self._graph = deepcopy(graph)  # Prevent future modification of this copy
+        self.graph = graph
 
         # self.num_components (int) - Number of connected components
         # self.labels (np.ndarray) - Component number for each vertex in the graph
-        self.num_components, self.labels = self.find_components(self._graph)
+        self.num_components, self.labels = self.find_components(self.graph)
 
     def find_components(self, graph: UndirectedGraph[T]) -> tuple[int, np.ndarray]:
         """Find the connected components of the given undirected graph.
@@ -59,22 +58,6 @@ class ConnectedComponents(Generic[T]):
 
         return num_components, labels
 
-    def get_graph_copy(self) -> UndirectedGraph[T]:
-        """Return a copy of the stored undirected graph."""
-        return deepcopy(self._graph)
-
-    def get_size_V(self) -> int:
-        """Return the size of the vertex space of the stored undirected graph."""
-        return self._graph.size_V
-
-    def get_degree(self, v_idx: int) -> int:
-        """Return the degree of the given vertex within the stored undirected graph.
-
-        :param      v_idx       Index of the vertex whose degree is returned
-        :returns    Degree (number of neighbors) of the given vertex
-        """
-        return len(self._graph.adjacent[v_idx])
-
     def get_component_subgraphs(self) -> list[UndirectedGraph[T]]:
         """Export the stored connected component labels as separate subgraphs.
 
@@ -83,15 +66,18 @@ class ConnectedComponents(Generic[T]):
         components: list[UndirectedGraph[T]] = []
 
         for c in range(self.num_components):
-            v_indices = [i for i in range(self._graph.size_V) if self.labels[i] == c]
-            vertices = [self._graph.V[v_idx] for v_idx in v_indices]
+            v_indices = [i for i in range(self.graph.size_V) if self.labels[i] == c]
+            vertices = [self.graph.V[v_idx] for v_idx in v_indices]
 
             component = UndirectedGraph[T](vertices, [])
 
             # Now, add the component's edges (i,j) separately
             # NOTE: Indices (v,u) are in graph.V but indices (i,j) are in component.V
             for i_idx, v_idx in enumerate(v_indices):
-                for u_idx in self._graph.adjacent[v_idx]:
+                for u_idx in self.graph.adjacent[v_idx]:
+                    if self.labels[u_idx] != c:
+                        continue  # Skip neighbors outside this component
+
                     assert u_idx in v_indices, "Neighbors should share their component!"
 
                     j_idx = v_indices.index(u_idx)
@@ -109,6 +95,6 @@ class ConnectedComponents(Generic[T]):
         :returns    Set of vertex indices in the requested component
         """
         in_component = self.labels == component_id
-        v_indices = {v for v in range(self._graph.size_V) if in_component[v]}
+        v_indices = {v for v in range(self.graph.size_V) if in_component[v]}
 
         return v_indices
