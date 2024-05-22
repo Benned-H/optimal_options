@@ -31,7 +31,7 @@ class RegionBasedAgent:
 
             # Create a new region-based subgoal option for each exit of the region
             self.options.append(
-                {RegionSubgoalOption(r_id, entrances, exits, e) for e in exits}
+                {RegionSubgoalOption(entrances, exits, e) for e in exits}
             )
 
         self.root_policy = None  # TODO: Initialize with real datatype!

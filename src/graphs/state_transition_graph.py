@@ -58,20 +58,20 @@ def get_transition_graph(env: FourRoomsEnv) -> UndirectedGraph[np.ndarray]:
 
 def entrance_states(
     regions: ConnectedComponents[np.ndarray], region_id: int
-) -> set[np.ndarray]:
+) -> set[int]:
     """Find the entrance states of the specified region of the state transition graph.
 
     Say S_i denotes a region of the state transition graph. Then:
-        Entrances(S_i) = { s in S_i that can be transitioned into from outside S_i}
+        Entrances(S_i) = { s in S_i that can be transitioned into from outside S_i }
 
     Reference: "Hierarchical Solution of Markov Decision Processes using Macro-actions"
         by Hauskrecht et al., 1998 provided this definition to create macro-actions.
 
     :param      regions     Connected components of the state transition graph
     :param      region_id   ID of the region for which entrances are found
-    :returns    Set of (x,y) entrance states for the region
+    :returns    Set of entrance states for the region (as vertex indices)
     """
-    entrances: set[np.ndarray] = set()
+    entrances: set[int] = set()
 
     graph = regions.get_graph_copy()
 
@@ -82,17 +82,14 @@ def entrance_states(
         neighbor_regions = [regions.labels[n] for n in neighbors]
         entrance_regions = [r for r in neighbor_regions if r != region_id]
 
-        # Can this vertex be transitioned into from outside the region?
-        if entrance_regions:  # If so, it contains an entrance state!
-            state = graph.V[v_idx]
-            entrances.add(state)
+        # Can this vertex be entered from outside the region?
+        if entrance_regions:  # If so, it corresponds to an entrance state!
+            entrances.add(v_idx)
 
     return entrances
 
 
-def exit_states(
-    regions: ConnectedComponents[np.ndarray], region_id: int
-) -> set[np.ndarray]:
+def exit_states(regions: ConnectedComponents[np.ndarray], region_id: int) -> set[int]:
     """Find the exit states of the specified region of the state transition graph.
 
     Say S_i denotes a region of the state transition graph. Then:
@@ -103,9 +100,9 @@ def exit_states(
 
     :param      regions     Connected components of the state transition graph
     :param      region_id   ID of the component for which exits are found
-    :returns    Set of (x,y) exit states for the region
+    :returns    Set of exit states for the region (as vertex indices)
     """
-    exits: set[np.ndarray] = set()
+    exits: set[int] = set()
 
     graph = regions.get_graph_copy()
 
@@ -118,9 +115,8 @@ def exit_states(
         # Find the region ID for each neighbor of this vertex
         neighbor_regions = [regions.labels[n] for n in neighbors]
 
-        # Can this vertex be transitioned into from the region (id)?
-        if region_id in neighbor_regions:  # If so, it contains an exit state!
-            state = graph.V[v_idx]
-            exits.add(state)
+        # Can this vertex be exited into from the region (region_id)?
+        if region_id in neighbor_regions:  # If so, it corresponds to an exit state!
+            exits.add(v_idx)
 
     return exits
