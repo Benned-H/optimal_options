@@ -1,4 +1,4 @@
-# Optimal Portable Options
+# Optimal Options
 
 A Bayesian model selection framework for identifying optimal portable options.
 
