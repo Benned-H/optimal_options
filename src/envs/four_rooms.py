@@ -81,21 +81,26 @@ class FourRoomsEnv(gym.Env):
             }
         )
 
-        # Nine possible actions: move the agent into an adjacent square or wait
-        self.action_space = Discrete(9)
-
         # Maps abstract action indices to (x,y) directions in Cartesian space
         self._action_to_direction_xy = {
+            # 0: np.array([1, 0]),  # Right
+            # 1: np.array([1, 1]),  # Up-Right
+            # 2: np.array([0, 1]),  # Up
+            # 3: np.array([-1, 1]),  # Up-Left
+            # 4: np.array([-1, 0]),  # Left
+            # 5: np.array([-1, -1]),  # Down-Left
+            # 6: np.array([0, -1]),  # Down
+            # 7: np.array([1, -1]),  # Down-Right
+            # 8: np.array([0, 0]),  # No-op
             0: np.array([1, 0]),  # Right
-            1: np.array([1, 1]),  # Up-Right
-            2: np.array([0, 1]),  # Up
-            3: np.array([-1, 1]),  # Up-Left
-            4: np.array([-1, 0]),  # Left
-            5: np.array([-1, -1]),  # Down-Left
-            6: np.array([0, -1]),  # Down
-            7: np.array([1, -1]),  # Down-Right
-            8: np.array([0, 0]),  # No-op
+            1: np.array([0, 1]),  # Up
+            2: np.array([-1, 0]),  # Left
+            3: np.array([0, -1]),  # Down
+            4: np.array([0, 0]),  # No-op
         }
+
+        # Possible actions: move the agent into an adjacent square or wait
+        self.action_space = Discrete(len(self._action_to_direction_xy))
 
         # Ensure that render_mode is None, or supported by the environment
         assert render_mode is None or render_mode in self.metadata["render_modes"]
@@ -120,6 +125,12 @@ class FourRoomsEnv(gym.Env):
 
         # Member variable to store paths over (x,y) states to be rendered
         self.path: list[np.ndarray] = []
+
+        # Flag to display the vertex number of each state
+        self.show_vertex_idx = False
+        self.font: pygame.font.SysFont = None  # Font used to write rendered text
+
+        self.skip_agent_goal = False  # Flag to skip rendering the agent and goal (x,y)
 
     def _get_obs(self):
         """Translate the environment's state into an observation."""
@@ -342,20 +353,21 @@ class FourRoomsEnv(gym.Env):
                 pygame.Rect(wall_pix_xy * cell_pixels, cell_rect),
             )
 
-        # Draw the goal in green
-        goal_pix_xy = self.xy_to_pix_xy(self._goal_xy)
-        pygame.draw.rect(
-            canvas, (18, 181, 32), pygame.Rect(goal_pix_xy * cell_pixels, cell_rect)
-        )
+        if not self.skip_agent_goal:
+            # Draw the goal in green
+            goal_pix_xy = self.xy_to_pix_xy(self._goal_xy)
+            pygame.draw.rect(
+                canvas, (18, 181, 32), pygame.Rect(goal_pix_xy * cell_pixels, cell_rect)
+            )
 
-        # Draw the agent in red
-        agent_pix_xy = self.xy_to_pix_xy(self._agent_xy)
-        pygame.draw.circle(
-            canvas,
-            (176, 23, 59),
-            (agent_pix_xy + 0.5) * cell_pixels,  # Center of the circle
-            cell_pixels / 2.5,  # Radius (pixels)
-        )
+            # Draw the agent in red
+            agent_pix_xy = self.xy_to_pix_xy(self._agent_xy)
+            pygame.draw.circle(
+                canvas,
+                (176, 23, 59),
+                (agent_pix_xy + 0.5) * cell_pixels,  # Center of the circle
+                cell_pixels / 2.5,  # Radius (pixels)
+            )
 
         # Draw the stored path, if there is one
         if self.path:
@@ -437,6 +449,20 @@ class FourRoomsEnv(gym.Env):
                 (cell_pixels * line, self.window_size),  # End position (x,y)
                 width=3,
             )
+
+        # If necessary, show the vertex numbers of the currently stored graph
+        if self.show_vertex_idx:
+            graph = self.transition_graphs[0]
+
+            for v_idx, v_xy in enumerate(graph.V):
+                v_pix_xy = self.xy_to_pix_xy(v_xy)  # Pixel (x,y) of vertex
+
+                # Render the vertex index as a string
+                text_size = np.array(self.font.size(str(v_idx)))
+                text_surface = self.font.render(str(v_idx), False, (0, 0, 0))
+                text_pix_xy = (v_pix_xy + 0.5) * cell_pixels - 0.5 * text_size
+
+                canvas.blit(text_surface, text_pix_xy)
 
         # In "human" mode, copy the drawing from `canvas` to the visible window
         if self.render_mode == "human":

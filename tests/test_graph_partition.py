@@ -3,6 +3,7 @@
 import numpy as np
 from graphs.undirected_graph import UndirectedGraph
 from graphs.graph_partition import uniform_spanning_tree
+from graphs.connectivity import is_connected
 
 
 def test_uniform_spanning_tree():
@@ -41,4 +42,6 @@ def test_uniform_spanning_tree():
         assert spanning_tree.size_E == tree_size_E, "Expected |T.E| == 2(|G.V| - 1)!"
 
         # Expect the spanning tree to be a tree (connected and acyclic)
-        # TODO - UndirectedGraph needs methods is_connected() and is_cyclic()
+        assert is_connected(spanning_tree), "Expected spanning tree to be connected!"
+
+        # TODO - UndirectedGraph needs method: is_cyclic()

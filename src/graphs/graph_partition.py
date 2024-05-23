@@ -72,7 +72,7 @@ def decompose(
     :param      n               Number of connected components to create
     :param      graph           Undirected graph to decompose into components
     :param      rng             Random number generator (initialized elsewhere)
-    :returns    Connected components object (contains component labels for each vertex)
+    :returns    Connected components object (contains a region label for each vertex)
     """
     assert 1 <= n, f"{n} < 1 is an invalid number of components!"
     assert (
@@ -87,10 +87,10 @@ def decompose(
         spanning_tree.remove_edge(edge)
 
     # Find the connected components of the resulting graph
-    connected_components = ConnectedComponents(spanning_tree)
+    connected_components = ConnectedComponents(spanning_tree, graph)
 
     # Sanity-check - Did we end up with N components, as expected?
-    resulting_n = connected_components.num_components
-    assert resulting_n == n, f"Error: decompose({n}) produced {resulting_n} components!"
+    result_n = connected_components.num_components
+    assert result_n == n, f"Error: decompose({n}) produced {result_n} components!"
 
     return connected_components

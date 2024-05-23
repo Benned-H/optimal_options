@@ -1,4 +1,4 @@
-name: opo-env
+name: oo-env
 channels:
   - conda-forge
   - defaults
