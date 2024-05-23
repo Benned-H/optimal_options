@@ -3,12 +3,15 @@
 import numpy as np
 
 from envs.four_rooms import FourRoomsEnv
+from graphs.undirected_graph import UndirectedGraph
 from graphs.connected_components import ConnectedComponents
 from graphs.state_transition_graph import get_transition_graph
 from graphs.graph_partition import decompose
 
 
-def create_example_regions(env: FourRoomsEnv) -> ConnectedComponents[np.ndarray]:
+def create_example_regions(
+    env: FourRoomsEnv,
+) -> tuple[UndirectedGraph[np.ndarray], ConnectedComponents[np.ndarray]]:
     """Create and return the example from the supplementary material of OBH."""
 
     rng = np.random.default_rng()
@@ -19,7 +22,7 @@ def create_example_regions(env: FourRoomsEnv) -> ConnectedComponents[np.ndarray]
     components.labels.fill(-1)  # Clear all region labels
 
     # Manually create the intended regions
-    for v_idx, v_xy in enumerate(components.graph.V):
+    for v_idx, v_xy in enumerate(graph.V):
         x, y = tuple(v_xy)
 
         if x < 6 and y <= 6:  # Region 0
@@ -36,4 +39,7 @@ def create_example_regions(env: FourRoomsEnv) -> ConnectedComponents[np.ndarray]
             components.labels[v_idx] != -1
         ), f"Didn't expect label for vertex {v_idx} at xy({x},{y}) to be -1"
 
-    return components
+    # Reset the components graph to full connected components w/in state graph
+    components.reset_edges(graph)
+
+    return (graph, components)

@@ -46,7 +46,7 @@ def main():
         env.reset()
 
         # Create an HRL agent using the random graph decomposition
-        agent = RegionBasedAgent(components)
+        agent = RegionBasedAgent(graph, components)
         total_options = agent.num_options()
 
         print(f"Created an HRL agent with {total_options} total subgoal options.")

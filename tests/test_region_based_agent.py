@@ -1,7 +1,5 @@
 """Tests for the RegionBasedAgent class."""
 
-import numpy as np
-
 from envs.four_rooms import FourRoomsEnv
 from envs.example_regions import create_example_regions
 from agents.region_based_agent import RegionBasedAgent
@@ -12,9 +10,9 @@ def test_example_possible_actions():
 
     # Arrange - Create regions, an agent, and the task paths for the OBH example.
     env = FourRoomsEnv(render_mode=None)
-    example_regions = create_example_regions(env)
+    state_space, example_regions = create_example_regions(env)
 
-    agent = RegionBasedAgent(example_regions)
+    agent = RegionBasedAgent(state_space, example_regions)
 
     first_task = [38, 48, 52, 60, 70, 81]
     second_task = [49, 48, 52, 60]

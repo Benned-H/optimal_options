@@ -57,9 +57,11 @@ def get_transition_graph(env: FourRoomsEnv) -> UndirectedGraph[np.ndarray]:
 
 
 def entrance_states(
-    regions: ConnectedComponents[np.ndarray], region_id: int
+    state_space: UndirectedGraph[np.ndarray],
+    regions: ConnectedComponents[np.ndarray],
+    region_id: int,
 ) -> set[int]:
-    """Find the entrance states of the specified region of the state transition graph.
+    """Find the entrance states of the specified region of the state space.
 
     Say S_i denotes a region of the state transition graph. Then:
         Entrances(S_i) = { s in S_i that can be transitioned into from outside S_i }
@@ -67,14 +69,15 @@ def entrance_states(
     Reference: "Hierarchical Solution of Markov Decision Processes using Macro-actions"
         by Hauskrecht et al., 1998 provided this definition to create macro-actions.
 
-    :param      regions     Connected components of the state transition graph
-    :param      region_id   ID of the region for which entrances are found
+    :param      state_space     Graph defining connectivity of state space
+    :param      regions         Connected components of the state transition graph
+    :param      region_id       ID of the region for which entrances are found
     :returns    Set of entrance states for the region (as vertex indices)
     """
     entrances: set[int] = set()
 
     for v_idx in regions.get_vertex_indices(region_id):
-        neighbors = regions.graph.adjacent[v_idx]
+        neighbors = state_space.adjacent[v_idx]
 
         # Find the region ID for each neighbor of this vertex
         neighbor_regions = [regions.labels[n] for n in neighbors]
@@ -87,7 +90,11 @@ def entrance_states(
     return entrances
 
 
-def exit_states(regions: ConnectedComponents[np.ndarray], region_id: int) -> set[int]:
+def exit_states(
+    state_space: UndirectedGraph[np.ndarray],
+    regions: ConnectedComponents[np.ndarray],
+    region_id: int,
+) -> set[int]:
     """Find the exit states of the specified region of the state transition graph.
 
     Say S_i denotes a region of the state transition graph. Then:
@@ -96,17 +103,18 @@ def exit_states(regions: ConnectedComponents[np.ndarray], region_id: int) -> set
     Reference: "Hierarchical Solution of Markov Decision Processes using Macro-actions"
         by Hauskrecht et al., 1998 provided this definition to create macro-actions.
 
-    :param      regions     Connected components of the state transition graph
-    :param      region_id   ID of the component for which exits are found
+    :param      state_space     Graph defining connectivity of state space
+    :param      regions         Connected components of the state transition graph
+    :param      region_id       ID of the component for which exits are found
     :returns    Set of exit states for the region (as vertex indices)
     """
     exits: set[int] = set()
 
     in_region = regions.get_vertex_indices(region_id)
-    outside_region = [v for v in range(regions.graph.size_V) if v not in in_region]
+    outside_region = [v for v in range(state_space.size_V) if v not in in_region]
 
     for v_idx in outside_region:
-        neighbors = regions.graph.adjacent[v_idx]
+        neighbors = state_space.adjacent[v_idx]
 
         # Find the region ID for each neighbor of this vertex
         neighbor_regions = [regions.labels[n] for n in neighbors]

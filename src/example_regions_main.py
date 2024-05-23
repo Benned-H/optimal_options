@@ -8,7 +8,7 @@ def main():
     """Visualize the example regions, to assist in debugging their creation."""
     env = FourRoomsEnv(render_mode="human")
 
-    components = create_example_regions(env)
+    _, components = create_example_regions(env)
     env.transition_graphs = components.get_component_subgraphs()
     env.reset()
 

@@ -130,6 +130,8 @@ class FourRoomsEnv(gym.Env):
         self.show_vertex_idx = False
         self.font: pygame.font.SysFont = None  # Font used to write rendered text
 
+        self.skip_agent_goal = False  # Flag to skip rendering the agent and goal (x,y)
+
     def _get_obs(self):
         """Translate the environment's state into an observation."""
         return {"agent_xy": self._agent_xy}
@@ -351,20 +353,21 @@ class FourRoomsEnv(gym.Env):
                 pygame.Rect(wall_pix_xy * cell_pixels, cell_rect),
             )
 
-        # Draw the goal in green
-        goal_pix_xy = self.xy_to_pix_xy(self._goal_xy)
-        pygame.draw.rect(
-            canvas, (18, 181, 32), pygame.Rect(goal_pix_xy * cell_pixels, cell_rect)
-        )
+        if not self.skip_agent_goal:
+            # Draw the goal in green
+            goal_pix_xy = self.xy_to_pix_xy(self._goal_xy)
+            pygame.draw.rect(
+                canvas, (18, 181, 32), pygame.Rect(goal_pix_xy * cell_pixels, cell_rect)
+            )
 
-        # Draw the agent in red
-        agent_pix_xy = self.xy_to_pix_xy(self._agent_xy)
-        pygame.draw.circle(
-            canvas,
-            (176, 23, 59),
-            (agent_pix_xy + 0.5) * cell_pixels,  # Center of the circle
-            cell_pixels / 2.5,  # Radius (pixels)
-        )
+            # Draw the agent in red
+            agent_pix_xy = self.xy_to_pix_xy(self._agent_xy)
+            pygame.draw.circle(
+                canvas,
+                (176, 23, 59),
+                (agent_pix_xy + 0.5) * cell_pixels,  # Center of the circle
+                cell_pixels / 2.5,  # Radius (pixels)
+            )
 
         # Draw the stored path, if there is one
         if self.path:

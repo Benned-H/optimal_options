@@ -1,5 +1,6 @@
 """This module provides a class to represent and compute connected components."""
 
+from copy import deepcopy
 from typing import Generic
 import numpy as np
 from graphs.undirected_graph import T, UndirectedGraph
@@ -8,16 +9,38 @@ from graphs.undirected_graph import T, UndirectedGraph
 class ConnectedComponents(Generic[T]):
     """A generic representation for connected components in an undirected graph."""
 
-    def __init__(self, graph: UndirectedGraph[T]):
+    def __init__(self, graph: UndirectedGraph[T], state_space: UndirectedGraph[T]):
         """Compute and store the connected components of the given graph.
 
-        :param      graph       Graph for which connected components are found
+        :param      graph           Graph for which connected components are found
+        :param      state_space     Graph defining space of all possible edges
         """
-        self.graph = graph
 
         # self.num_components (int) - Number of connected components
         # self.labels (np.ndarray) - Component number for each vertex in the graph
-        self.num_components, self.labels = self.find_components(self.graph)
+        self.num_components, self.labels = self.find_components(graph)
+
+        self.reset_edges(state_space)
+
+    def __repr__(self):
+        """Create an unambiguous string representing this object."""
+        return (
+            f"ConnectedComponents: {self.num_components} components, "
+            f"labels: {self.labels}"
+        )
+
+    def get_size_V(self):
+        """Return the size of the vertex list in the stored undirected graph."""
+        return self._graph.size_V
+
+    def share_edge(self, v_idx: int, u_idx: int) -> bool:
+        """Check whether the two given vertices share an edge in self._graph."""
+        v_to_u = u_idx in self._graph.adjacent[v_idx]
+        u_to_v = v_idx in self._graph.adjacent[u_idx]
+
+        assert v_to_u == u_to_v  # Sanity-check (expect undirected graph)
+
+        return v_to_u
 
     def find_components(self, graph: UndirectedGraph[T]) -> tuple[int, np.ndarray]:
         """Find the connected components of the given undirected graph.
@@ -58,6 +81,26 @@ class ConnectedComponents(Generic[T]):
 
         return num_components, labels
 
+    def reset_edges(self, graph: UndirectedGraph[T]):
+        """Reset the stored graph using the stored labels and given possible edges.
+
+        Replaces self._graph with a copy of the given graph, except only with edges
+            within the same component, as defined by the stored region labels.
+
+        This effectively "prunes" all edges that cross a region boundary.
+
+        :param      graph       Graph defining all possible edges in the result
+        :returns    Graph with all region-crossing edges removed
+        """
+        self._graph = deepcopy(graph)
+
+        for v_idx in range(graph.size_V):
+            curr_region = self.labels[v_idx]
+
+            for n_idx in graph.adjacent[v_idx]:
+                if self.labels[n_idx] != curr_region:  # This edge crosses regions...
+                    self._graph.adjacent[v_idx].remove(n_idx)  # so remove it
+
     def get_component_subgraphs(self) -> list[UndirectedGraph[T]]:
         """Export the stored connected component labels as separate subgraphs.
 
@@ -66,19 +109,18 @@ class ConnectedComponents(Generic[T]):
         components: list[UndirectedGraph[T]] = []
 
         for c in range(self.num_components):
-            v_indices = [i for i in range(self.graph.size_V) if self.labels[i] == c]
-            vertices = [self.graph.V[v_idx] for v_idx in v_indices]
+            v_indices = [i for i in range(self._graph.size_V) if self.labels[i] == c]
+            vertices = [self._graph.V[v_idx] for v_idx in v_indices]
 
             component = UndirectedGraph[T](vertices, [])
 
             # Now, add the component's edges (i,j) separately
             # NOTE: Indices (v,u) are in graph.V but indices (i,j) are in component.V
             for i_idx, v_idx in enumerate(v_indices):
-                for u_idx in self.graph.adjacent[v_idx]:
-                    if self.labels[u_idx] != c:
-                        continue  # Skip neighbors outside this component
+                for u_idx in self._graph.adjacent[v_idx]:
 
-                    assert u_idx in v_indices, "Neighbors should share their component!"
+                    # Sanity-check - self.labels should agree with self._graph
+                    assert u_idx in v_indices, "Neighbors should share a component!"
 
                     j_idx = v_indices.index(u_idx)
                     component.add_edge((i_idx, j_idx))
@@ -95,6 +137,6 @@ class ConnectedComponents(Generic[T]):
         :returns    Set of vertex indices in the requested component
         """
         in_component = self.labels == component_id
-        v_indices = {v for v in range(self.graph.size_V) if in_component[v]}
+        v_indices = {v for v in range(self._graph.size_V) if in_component[v]}
 
         return v_indices

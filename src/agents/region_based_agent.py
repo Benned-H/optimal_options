@@ -2,6 +2,7 @@
 
 import numpy as np
 
+from graphs.undirected_graph import UndirectedGraph
 from graphs.connected_components import ConnectedComponents
 from graphs.state_transition_graph import entrance_states, exit_states
 from options.region_subgoal_option import RegionSubgoalOption
@@ -12,15 +13,23 @@ from optimal_behaviors.generate_behaviors import PathT
 class RegionBasedAgent:
     """An agent using subgoal options based on regions of the state space."""
 
-    def __init__(self, regions: ConnectedComponents[np.ndarray]):
-        """Initialize the agent using the given state space decomposition.
+    def __init__(
+        self,
+        state_space: UndirectedGraph[np.ndarray],
+        regions: ConnectedComponents[np.ndarray],
+    ):
+        """Initialize the agent using the given state space and its decomposition.
 
-        :param      regions     Connected components of the state transition graph
+        :param      state_space     Graph defining the connectivity of the state space
+        :param      regions         Connected components of the state transition graph
         """
+        assert state_space.size_V == regions.get_size_V(), "Graphs must have same |V|!"
+
+        self.state_space = state_space
         self.regions = regions  # Store the agent-specific graph decomposition
 
         region_ids = [r for r in range(regions.num_components)]
-        size_V = regions.graph.size_V  # To be passed to the subgoal options
+        size_V = state_space.size_V  # To be passed to the subgoal options
 
         # The agent has options for each exit state (subgoal) of each region
         #   Indexing into self.options by region ID gives that region's options
@@ -32,10 +41,10 @@ class RegionBasedAgent:
         for r_id in region_ids:
 
             # All options for the region share its entrance/exit states
-            entrances = entrance_states(regions, r_id)
+            entrances = entrance_states(state_space, regions, r_id)
             self.region_entrances.append(entrances)
 
-            exits = exit_states(regions, r_id)
+            exits = exit_states(state_space, regions, r_id)
             self.region_exits.append(exits)
 
             # Create a new region-based subgoal option for each exit of the region
@@ -44,6 +53,21 @@ class RegionBasedAgent:
             )
 
         self.root_policy = None  # TODO: Initialize with real datatype!
+
+    def __eq__(self, other: "RegionBasedAgent") -> bool:
+        """Check whether the given region-based agent is equal to this one.
+
+        Considers only the agents' regions, as all other variables depend on this.
+
+        :param      other       Another region-based agent to compare equality against
+        """
+        if self.regions.num_components != other.regions.num_components:
+            return False
+
+        if not np.array_equal(self.regions.labels, other.regions.labels):
+            return False
+
+        return True
 
     def num_options(self) -> int:
         """Find the total number of subgoal options this agent has available."""
@@ -163,7 +187,7 @@ class RegionBasedAgent:
                 continue  # Jump to the next state in the path
 
             # Otherwise, we care about the out-degree of the current state
-            degree_v = len(self.regions.graph.adjacent[curr_state_v])
+            degree_v = len(self.state_space.adjacent[curr_state_v])
 
             if constrain_pi_t:
 
